@@ -24,6 +24,7 @@ func NewRecord(userID, postID, data string, createdAt time.Time) *record {
 type Storage interface {
 	Create(userID, data string) (string, time.Time, error)
 	Read(userID, postID string) (*record, error)
+	ReadAll(userID string) ([]*record, error)
 	Update(userID, postID, data string) error
 	Delete(userID, postID string) error
 }

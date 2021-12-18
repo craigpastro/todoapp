@@ -14,6 +14,7 @@ func Run(serverAddr string, storage storage.Storage) error {
 
 	r.POST("/v1/users/:userid/posts", h.CreateHandler)
 	r.GET("/v1/users/:userid/posts/:postid", h.ReadHandler)
+	r.GET("/v1/users/:userid/posts", h.ReadAllHandler)
 	r.PATCH("/v1/users/:userid/posts/:postid", h.UpdateHandler)
 	r.DELETE("/v1/users/:userid/posts/:postid", h.DeleteHandler)
 

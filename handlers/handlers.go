@@ -27,6 +27,10 @@ type ReadResponse struct {
 	CreatedAt time.Time `json:"createdAt"`
 }
 
+type ReadAllResponse struct {
+	Posts []ReadResponse `json:"posts"`
+}
+
 func (e *Handler) CreateHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	var req CreateRequest
@@ -61,6 +65,27 @@ func (e *Handler) ReadHandler(c *gin.Context) {
 		Data:      record.Data,
 		CreatedAt: record.CreatedAt,
 	})
+}
+
+func (e *Handler) ReadAllHandler(c *gin.Context) {
+	userID := c.Param("userid")
+
+	records, err := e.Storage.ReadAll(userID)
+	if err != nil {
+		c.Status(http.StatusInternalServerError)
+		return
+	}
+
+	res := []ReadResponse{}
+	for _, record := range records {
+		res = append(res, ReadResponse{
+			PostID:    record.PostID,
+			Data:      record.Data,
+			CreatedAt: record.CreatedAt,
+		})
+	}
+
+	c.JSON(http.StatusOK, ReadAllResponse{Posts: res})
 }
 
 func (e *Handler) UpdateHandler(c *gin.Context) {

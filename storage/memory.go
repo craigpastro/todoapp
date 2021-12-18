@@ -27,17 +27,31 @@ func (m *MemoryDB) Create(userID, data string) (string, time.Time, error) {
 }
 
 func (m *MemoryDB) Read(userID, postID string) (*record, error) {
-	posts, ok := m.store[userID]
+	records, ok := m.store[userID]
 	if !ok {
 		return nil, UserDoesNotExist(userID)
 	}
 
-	record, ok := posts[postID]
+	record, ok := records[postID]
 	if !ok {
 		return nil, PostDoesNotExist(postID)
 	}
 
 	return record, nil
+}
+
+func (m *MemoryDB) ReadAll(userID string) ([]*record, error) {
+	records, ok := m.store[userID]
+	if !ok {
+		return nil, UserDoesNotExist(userID)
+	}
+
+	res := []*record{}
+	for _, record := range records {
+		res = append(res, record)
+	}
+
+	return res, nil
 }
 
 func (m *MemoryDB) Update(userID, postID, data string) error {
