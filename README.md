@@ -36,5 +36,5 @@ curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
 ## Run tests
 
 ```
-go test
+go test ./...
 ```
