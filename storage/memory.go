@@ -1,38 +1,43 @@
 package storage
 
-import "github.com/craigpastro/crudapp/myid"
+import (
+	"time"
+
+	"github.com/craigpastro/crudapp/myid"
+)
 
 type MemoryDB struct {
-	store map[string]map[string]string
+	store map[string]map[string]*record
 }
 
 func NewMemoryDB() Storage {
-	return &MemoryDB{store: map[string]map[string]string{}}
+	return &MemoryDB{store: map[string]map[string]*record{}}
 }
 
-func (m *MemoryDB) Create(userID, data string) (string, error) {
+func (m *MemoryDB) Create(userID, data string) (string, time.Time, error) {
 	if m.store[userID] == nil {
-		m.store[userID] = map[string]string{}
+		m.store[userID] = map[string]*record{}
 	}
 
 	postID := myid.New()
-	m.store[userID][postID] = data
+	now := time.Now()
+	m.store[userID][postID] = NewRecord(userID, postID, data, now)
 
-	return postID, nil
+	return postID, now, nil
 }
 
-func (m *MemoryDB) Read(userID, postID string) (string, error) {
+func (m *MemoryDB) Read(userID, postID string) (*record, error) {
 	posts, ok := m.store[userID]
 	if !ok {
-		return "", UserDoesNotExist(userID)
+		return nil, UserDoesNotExist(userID)
 	}
 
-	data, ok := posts[postID]
+	record, ok := posts[postID]
 	if !ok {
-		return "", PostDoesNotExist(postID)
+		return nil, PostDoesNotExist(postID)
 	}
 
-	return data, nil
+	return record, nil
 }
 
 func (m *MemoryDB) Update(userID, postID, data string) error {
@@ -46,7 +51,8 @@ func (m *MemoryDB) Update(userID, postID, data string) error {
 		return PostDoesNotExist(postID)
 	}
 
-	posts[postID] = data
+	record := posts[postID]
+	record.Data = data
 
 	return nil
 }

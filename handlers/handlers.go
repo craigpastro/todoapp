@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/gin-gonic/gin"
@@ -16,11 +17,14 @@ type CreateRequest struct {
 }
 
 type CreateResponse struct {
-	ID string `json:"id"`
+	ID        string    `json:"id"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 type ReadResponse struct {
-	Data string `json:"data"`
+	PostID    string    `json:"postID"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func (e *Handler) CreateHandler(c *gin.Context) {
@@ -30,26 +34,33 @@ func (e *Handler) CreateHandler(c *gin.Context) {
 		return
 	}
 
-	postID, err := e.Storage.Create(userID, req.Data)
+	postID, createdAt, err := e.Storage.Create(userID, req.Data)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusCreated, CreateResponse{ID: postID})
+	c.JSON(http.StatusCreated, CreateResponse{
+		ID:        postID,
+		CreatedAt: createdAt,
+	})
 }
 
 func (e *Handler) ReadHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
 
-	data, err := e.Storage.Read(userID, postID)
+	record, err := e.Storage.Read(userID, postID)
 	if err != nil {
 		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	c.JSON(http.StatusOK, ReadResponse{Data: data})
+	c.JSON(http.StatusOK, ReadResponse{
+		PostID:    record.PostID,
+		Data:      record.Data,
+		CreatedAt: record.CreatedAt,
+	})
 }
 
 func (e *Handler) UpdateHandler(c *gin.Context) {
