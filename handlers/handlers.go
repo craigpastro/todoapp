@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"time"
 
@@ -12,7 +13,13 @@ type Handler struct {
 	Storage storage.Storage
 }
 
-type CreateRequest struct {
+func New(storage storage.Storage) Handler {
+	return Handler{
+		Storage: storage,
+	}
+}
+
+type Request struct {
 	Data string `json:"data"`
 }
 
@@ -31,16 +38,16 @@ type ReadAllResponse struct {
 	Posts []ReadResponse `json:"posts"`
 }
 
-func (e *Handler) CreateHandler(c *gin.Context) {
+func (h *Handler) CreateHandler(c *gin.Context) {
 	userID := c.Param("userid")
-	var req CreateRequest
+	var req Request
 	if err := c.BindJSON(&req); err != nil {
 		return
 	}
 
-	postID, createdAt, err := e.Storage.Create(userID, req.Data)
+	postID, createdAt, err := h.Storage.Create(userID, req.Data)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		handleStorageError(c, err)
 		return
 	}
 
@@ -50,13 +57,13 @@ func (e *Handler) CreateHandler(c *gin.Context) {
 	})
 }
 
-func (e *Handler) ReadHandler(c *gin.Context) {
+func (h *Handler) ReadHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
 
-	record, err := e.Storage.Read(userID, postID)
+	record, err := h.Storage.Read(userID, postID)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		handleStorageError(c, err)
 		return
 	}
 
@@ -67,12 +74,12 @@ func (e *Handler) ReadHandler(c *gin.Context) {
 	})
 }
 
-func (e *Handler) ReadAllHandler(c *gin.Context) {
+func (h *Handler) ReadAllHandler(c *gin.Context) {
 	userID := c.Param("userid")
 
-	records, err := e.Storage.ReadAll(userID)
+	records, err := h.Storage.ReadAll(userID)
 	if err != nil {
-		c.Status(http.StatusInternalServerError)
+		handleStorageError(c, err)
 		return
 	}
 
@@ -88,26 +95,40 @@ func (e *Handler) ReadAllHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, ReadAllResponse{Posts: res})
 }
 
-func (e *Handler) UpdateHandler(c *gin.Context) {
+func (h *Handler) UpdateHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
+	var req Request
+	if err := c.BindJSON(&req); err != nil {
+		return
+	}
 
-	if err := e.Storage.Update(userID, postID, ""); err != nil {
-		c.Status(http.StatusInternalServerError)
+	if err := h.Storage.Update(userID, postID, req.Data); err != nil {
+		handleStorageError(c, err)
 		return
 	}
 
 	c.Status(http.StatusOK)
 }
 
-func (e *Handler) DeleteHandler(c *gin.Context) {
+func (h *Handler) DeleteHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
 
-	if err := e.Storage.Delete(userID, postID); err != nil {
-		c.Status(http.StatusInternalServerError)
+	if err := h.Storage.Delete(userID, postID); err != nil {
+		handleStorageError(c, err)
 		return
 	}
 
 	c.Status(http.StatusOK)
+}
+
+func handleStorageError(c *gin.Context, err error) {
+	if errors.Is(err, storage.ErrPostDoesNotExist) {
+		c.Status(http.StatusBadRequest)
+	} else if errors.Is(err, storage.ErrUserDoesNotExist) {
+		c.Status(http.StatusBadRequest)
+	} else {
+		c.Status(http.StatusInternalServerError)
+	}
 }

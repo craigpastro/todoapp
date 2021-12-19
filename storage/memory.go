@@ -29,12 +29,12 @@ func (m *MemoryDB) Create(userID, data string) (string, time.Time, error) {
 func (m *MemoryDB) Read(userID, postID string) (*record, error) {
 	records, ok := m.store[userID]
 	if !ok {
-		return nil, UserDoesNotExist(userID)
+		return nil, ErrUserDoesNotExist
 	}
 
 	record, ok := records[postID]
 	if !ok {
-		return nil, PostDoesNotExist(postID)
+		return nil, ErrPostDoesNotExist
 	}
 
 	return record, nil
@@ -43,7 +43,7 @@ func (m *MemoryDB) Read(userID, postID string) (*record, error) {
 func (m *MemoryDB) ReadAll(userID string) ([]*record, error) {
 	records, ok := m.store[userID]
 	if !ok {
-		return nil, UserDoesNotExist(userID)
+		return nil, ErrUserDoesNotExist
 	}
 
 	res := []*record{}
@@ -57,16 +57,15 @@ func (m *MemoryDB) ReadAll(userID string) ([]*record, error) {
 func (m *MemoryDB) Update(userID, postID, data string) error {
 	posts, ok := m.store[userID]
 	if !ok {
-		return UserDoesNotExist(userID)
+		return ErrUserDoesNotExist
 	}
 
 	_, ok = posts[postID]
 	if !ok {
-		return PostDoesNotExist(postID)
+		return ErrPostDoesNotExist
 	}
 
-	record := posts[postID]
-	record.Data = data
+	posts[postID] = NewRecord(userID, postID, data, time.Now())
 
 	return nil
 }
@@ -74,7 +73,7 @@ func (m *MemoryDB) Update(userID, postID, data string) error {
 func (m *MemoryDB) Delete(userID, postID string) error {
 	posts, ok := m.store[userID]
 	if !ok {
-		return UserDoesNotExist(userID)
+		return ErrUserDoesNotExist
 	}
 
 	delete(posts, postID)

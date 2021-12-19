@@ -61,7 +61,7 @@ func TestDelete(t *testing.T) {
 	db.Delete(userID, postID)
 	_, err := db.Read(userID, postID)
 
-	if errors.Is(err, PostDoesNotExist(postID)) {
-		t.Errorf("unexpected error. got '%v', want '%v'", err, PostDoesNotExist(postID))
+	if !errors.Is(err, ErrPostDoesNotExist) {
+		t.Errorf("unexpected error. got '%v', want '%v'", err, ErrPostDoesNotExist)
 	}
 }

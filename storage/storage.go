@@ -1,8 +1,14 @@
 package storage
 
 import (
-	"fmt"
+	"errors"
 	"time"
+)
+
+var (
+	ErrPostDoesNotExist     = errors.New("post does not exist")
+	ErrUndefinedStorageType = errors.New("undefined storage type")
+	ErrUserDoesNotExist     = errors.New("user does not exist")
 )
 
 type record struct {
@@ -34,17 +40,5 @@ func New(storageType string) (Storage, error) {
 		return NewMemoryDB(), nil
 	}
 
-	return nil, UndefinedStorageType(storageType)
-}
-
-func PostDoesNotExist(postID string) error {
-	return fmt.Errorf("post '%s' does not exist", postID)
-}
-
-func UserDoesNotExist(userID string) error {
-	return fmt.Errorf(fmt.Sprintf("user '%s' does not exist", userID))
-}
-
-func UndefinedStorageType(storage string) error {
-	return fmt.Errorf(fmt.Sprintf("storage type '%s' is undefined", storage))
+	return nil, ErrUndefinedStorageType
 }
