@@ -1,8 +1,13 @@
 # A simple CRUD app
 
+Still lots to do.
+- Tests
+- Tracing
+- Other storage
+
 ## Run the app
 
-Execute `go run main.go` and (by default) the service should be listening on `127.0.0.1:8080`.
+Execute `make run` and (by default) the service should be listening on `127.0.0.1:8080`.
 
 ## Create
 
