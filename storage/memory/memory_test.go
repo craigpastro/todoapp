@@ -1,8 +1,10 @@
-package storage
+package memory
 
 import (
 	"errors"
 	"testing"
+
+	"github.com/craigpastro/crudapp/storage"
 )
 
 const (
@@ -61,7 +63,7 @@ func TestDelete(t *testing.T) {
 	db.Delete(userID, postID)
 	_, err := db.Read(userID, postID)
 
-	if !errors.Is(err, ErrPostDoesNotExist) {
-		t.Errorf("unexpected error. got '%v', want '%v'", err, ErrPostDoesNotExist)
+	if !errors.Is(err, storage.ErrPostDoesNotExist) {
+		t.Errorf("unexpected error. got '%v', want '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }

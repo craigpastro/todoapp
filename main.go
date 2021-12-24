@@ -5,6 +5,7 @@ import (
 
 	"github.com/craigpastro/crudapp/router"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -28,12 +29,21 @@ func main() {
 }
 
 func Run(config Config) {
-	storage, err := storage.New(config.StorageType)
+	storage, err := NewStorage(config.StorageType)
 	if err != nil {
 		log.Fatal("error initializing storage")
 	}
 
 	if err := router.Run(config.ServerAddr, storage); err != nil {
 		log.Fatal("error starting the server", err)
+	}
+}
+
+func NewStorage(storageType string) (storage.Storage, error) {
+	switch storageType {
+	case "memory":
+		return memory.NewMemoryDB(), nil
+	default:
+		return nil, storage.ErrUndefinedStorageType
 	}
 }
