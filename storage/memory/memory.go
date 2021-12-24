@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"time"
 
 	"github.com/craigpastro/crudapp/myid"
@@ -11,11 +12,11 @@ type MemoryDB struct {
 	store map[string]map[string]*storage.Record
 }
 
-func NewMemoryDB() storage.Storage {
+func New() storage.Storage {
 	return &MemoryDB{store: map[string]map[string]*storage.Record{}}
 }
 
-func (m *MemoryDB) Create(userID, data string) (string, time.Time, error) {
+func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
 	if m.store[userID] == nil {
 		m.store[userID] = map[string]*storage.Record{}
 	}
@@ -27,7 +28,7 @@ func (m *MemoryDB) Create(userID, data string) (string, time.Time, error) {
 	return postID, now, nil
 }
 
-func (m *MemoryDB) Read(userID, postID string) (*storage.Record, error) {
+func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
 	records, ok := m.store[userID]
 	if !ok {
 		return nil, storage.ErrUserDoesNotExist
@@ -41,7 +42,7 @@ func (m *MemoryDB) Read(userID, postID string) (*storage.Record, error) {
 	return record, nil
 }
 
-func (m *MemoryDB) ReadAll(userID string) ([]*storage.Record, error) {
+func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
 	records, ok := m.store[userID]
 	if !ok {
 		return nil, storage.ErrUserDoesNotExist
@@ -55,7 +56,7 @@ func (m *MemoryDB) ReadAll(userID string) ([]*storage.Record, error) {
 	return res, nil
 }
 
-func (m *MemoryDB) Update(userID, postID, data string) error {
+func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) error {
 	posts, ok := m.store[userID]
 	if !ok {
 		return storage.ErrUserDoesNotExist
@@ -71,7 +72,7 @@ func (m *MemoryDB) Update(userID, postID, data string) error {
 	return nil
 }
 
-func (m *MemoryDB) Delete(userID, postID string) error {
+func (m *MemoryDB) Delete(ctx context.Context, userID, postID string) error {
 	posts, ok := m.store[userID]
 	if !ok {
 		return storage.ErrUserDoesNotExist

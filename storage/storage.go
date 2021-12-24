@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"errors"
 	"time"
 )
@@ -28,9 +29,9 @@ func NewRecord(userID, postID, data string, createdAt time.Time) *Record {
 }
 
 type Storage interface {
-	Create(userID, data string) (string, time.Time, error)
-	Read(userID, postID string) (*Record, error)
-	ReadAll(userID string) ([]*Record, error)
-	Update(userID, postID, data string) error
-	Delete(userID, postID string) error
+	Create(ctx context.Context, userID, data string) (string, time.Time, error)
+	Read(ctx context.Context, userID, postID string) (*Record, error)
+	ReadAll(ctx context.Context, userID string) ([]*Record, error)
+	Update(ctx context.Context, userID, postID, data string) error
+	Delete(ctx context.Context, userID, postID string) error
 }

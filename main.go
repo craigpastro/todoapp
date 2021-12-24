@@ -42,7 +42,7 @@ func Run(config Config) {
 func NewStorage(storageType string) (storage.Storage, error) {
 	switch storageType {
 	case "memory":
-		return memory.NewMemoryDB(), nil
+		return memory.New(), nil
 	default:
 		return nil, storage.ErrUndefinedStorageType
 	}
