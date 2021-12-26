@@ -7,7 +7,18 @@ Still lots to do.
 
 ## Run the app
 
-Execute `make run` and (by default) the service should be listening on `127.0.0.1:8080`.
+Depending on the storage type you want, run one of the following commands. If everything works fine the should be listening on `127.0.0.1:8080`.
+
+```
+make run  # defaults to memory
+make run-postgres
+```
+
+### Postgres
+
+```
+docker run --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password -d postgres:14.1
+```
 
 ## Create
 
