@@ -23,7 +23,7 @@ func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, tim
 
 	postID := myid.New()
 	now := time.Now()
-	m.store[userID][postID] = storage.NewRecord(userID, postID, data, now)
+	m.store[userID][postID] = storage.NewRecord(userID, postID, data, now, now)
 
 	return postID, now, nil
 }
@@ -56,20 +56,21 @@ func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	return res, nil
 }
 
-func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) error {
+func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
 	posts, ok := m.store[userID]
 	if !ok {
-		return storage.ErrUserDoesNotExist
+		return time.Time{}, storage.ErrUserDoesNotExist
 	}
 
-	_, ok = posts[postID]
+	post, ok := posts[postID]
 	if !ok {
-		return storage.ErrPostDoesNotExist
+		return time.Time{}, storage.ErrPostDoesNotExist
 	}
 
-	posts[postID] = storage.NewRecord(userID, postID, data, time.Now())
+	now := time.Now()
+	posts[postID] = storage.NewRecord(post.UserID, post.PostID, data, post.CreatedAt, now)
 
-	return nil
+	return now, nil
 }
 
 func (m *MemoryDB) Delete(ctx context.Context, userID, postID string) error {

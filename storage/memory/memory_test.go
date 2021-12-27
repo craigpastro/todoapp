@@ -55,8 +55,12 @@ func TestUpdate(t *testing.T) {
 	db.Update(ctx, userID, postID, newData)
 	record, _ := db.Read(ctx, userID, postID)
 
-	if record.Data != "new data" {
+	if record.Data != newData {
 		t.Errorf("wrong data. got '%s', want '%s'", record.Data, newData)
+	}
+
+	if record.CreatedAt.After(record.UpdatedAt) {
+		t.Errorf("createdAt is after updatedAt")
 	}
 }
 

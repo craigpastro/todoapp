@@ -38,11 +38,13 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	pool.Exec(ctx, `DROP TABLE IF EXISTS post`)
 	pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
 		user_id TEXT NOT NULL,
 		post_id TEXT NOT NULL,
 		data TEXT,
 		created_at TIMESTAMPTZ,
+		updated_at TIMESTAMPTZ,
 		PRIMARY KEY (user_id, post_id)
 	)`)
 
@@ -91,13 +93,17 @@ func TestReadAll(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
 	postID, _, _ := postgres.Create(ctx, userID, data)
-	err := postgres.Update(ctx, userID, postID, "new data")
+	newData := "new data"
+	postgres.Update(ctx, userID, postID, newData)
+	record, _ := postgres.Read(ctx, userID, postID)
 
-	if err != nil {
-		t.Errorf("error not nil: %s", err)
+	if record.Data != newData {
+		t.Errorf("wrong data. got '%s', want '%s'", record.Data, newData)
 	}
 
-	// TODO: check for updated data!
+	if record.CreatedAt.After(record.UpdatedAt) {
+		t.Errorf("createdAt is after updatedAt")
+	}
 }
 
 func TestDelete(t *testing.T) {

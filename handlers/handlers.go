@@ -103,7 +103,7 @@ func (h *Handler) UpdateHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.Storage.Update(c, userID, postID, req.Data); err != nil {
+	if _, err := h.Storage.Update(c, userID, postID, req.Data); err != nil {
 		handleStorageError(c, err)
 		return
 	}
