@@ -6,7 +6,6 @@ require (
 	github.com/gin-contrib/zap v0.0.2
 	github.com/gin-gonic/gin v1.7.7
 	github.com/jackc/pgx/v4 v4.14.1
-	github.com/joho/godotenv v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/segmentio/ksuid v1.0.4
 	go.uber.org/zap v1.19.1

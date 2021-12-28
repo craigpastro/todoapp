@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 	ctx = context.Background()
 	pool, err := pgxpool.Connect(ctx, config.PostgresURI)
 	if err != nil {
-		fmt.Println("error initializing postgres")
+		fmt.Println("error initializing Postgres")
 		os.Exit(1)
 	}
 
