@@ -44,4 +44,6 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17.x'
+      - env:
+          POSTGRES_URI: postgres://postgres:password@postgres:5432/postgres
       - run: make test
