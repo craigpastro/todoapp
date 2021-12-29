@@ -14,10 +14,15 @@ make run  # defaults to memory
 make run-postgres
 ```
 
-### Postgres
+### Tests
 
+You will need Postgres running. You can use:
 ```
-docker run --rm --name postgres -p 5432:5432 -e POSTGRES_PASSWORD=password -d postgres:14.1
+docker compose up -d
+```
+Then
+```
+make test
 ```
 
 ## Create
@@ -56,10 +61,4 @@ curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
 To delete user 1's post 2: 
 ```
 curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
-```
-
-## Run tests
-
-```
-go test ./...
 ```
