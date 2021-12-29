@@ -1,9 +1,10 @@
 # A simple CRUD app
 
-Still lots to do.
+Still lots to do:
+- Use grpc-gateway instead of gin
 - Tests
 - Tracing
-- Other storage
+- Other storage: redis, dynamodb, ...?
 
 ## Run the app
 
