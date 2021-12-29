@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -13,10 +14,11 @@ const (
 )
 
 func TestRead(t *testing.T) {
-	db := NewMemoryDB()
+	db := New()
+	ctx := context.Background()
 
-	postID, _, _ := db.Create(userID, data)
-	record, _ := db.Read(userID, postID)
+	postID, _, _ := db.Create(ctx, userID, data)
+	record, _ := db.Read(ctx, userID, postID)
 
 	if record.UserID != userID {
 		t.Errorf("wrong userID. got '%s', want '%s'", record.UserID, userID)
@@ -32,11 +34,12 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadAll(t *testing.T) {
-	db := NewMemoryDB()
+	db := New()
+	ctx := context.Background()
 
-	db.Create(userID, "data 1")
-	db.Create(userID, "data 2")
-	records, _ := db.ReadAll(userID)
+	db.Create(ctx, userID, "data 1")
+	db.Create(ctx, userID, "data 2")
+	records, _ := db.ReadAll(ctx, userID)
 
 	if len(records) != 2 {
 		t.Errorf("wrong number of records. got '%d', want '%d'", len(records), 2)
@@ -44,24 +47,30 @@ func TestReadAll(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db := NewMemoryDB()
+	db := New()
+	ctx := context.Background()
 
-	postID, _, _ := db.Create(userID, data)
+	postID, _, _ := db.Create(ctx, userID, data)
 	newData := "new data"
-	db.Update(userID, postID, newData)
-	record, _ := db.Read(userID, postID)
+	db.Update(ctx, userID, postID, newData)
+	record, _ := db.Read(ctx, userID, postID)
 
-	if record.Data != "new data" {
+	if record.Data != newData {
 		t.Errorf("wrong data. got '%s', want '%s'", record.Data, newData)
+	}
+
+	if record.CreatedAt.After(record.UpdatedAt) {
+		t.Errorf("createdAt is after updatedAt")
 	}
 }
 
 func TestDelete(t *testing.T) {
-	db := NewMemoryDB()
+	db := New()
+	ctx := context.Background()
 
-	postID, _, _ := db.Create(userID, data)
-	db.Delete(userID, postID)
-	_, err := db.Read(userID, postID)
+	postID, _, _ := db.Create(ctx, userID, data)
+	db.Delete(ctx, userID, postID)
+	_, err := db.Read(ctx, userID, postID)
 
 	if !errors.Is(err, storage.ErrPostDoesNotExist) {
 		t.Errorf("unexpected error. got '%v', want '%v'", err, storage.ErrPostDoesNotExist)

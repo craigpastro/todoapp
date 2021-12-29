@@ -45,7 +45,7 @@ func (h *Handler) CreateHandler(c *gin.Context) {
 		return
 	}
 
-	postID, createdAt, err := h.Storage.Create(userID, req.Data)
+	postID, createdAt, err := h.Storage.Create(c, userID, req.Data)
 	if err != nil {
 		handleStorageError(c, err)
 		return
@@ -61,7 +61,7 @@ func (h *Handler) ReadHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
 
-	record, err := h.Storage.Read(userID, postID)
+	record, err := h.Storage.Read(c, userID, postID)
 	if err != nil {
 		handleStorageError(c, err)
 		return
@@ -77,7 +77,7 @@ func (h *Handler) ReadHandler(c *gin.Context) {
 func (h *Handler) ReadAllHandler(c *gin.Context) {
 	userID := c.Param("userid")
 
-	records, err := h.Storage.ReadAll(userID)
+	records, err := h.Storage.ReadAll(c, userID)
 	if err != nil {
 		handleStorageError(c, err)
 		return
@@ -103,7 +103,7 @@ func (h *Handler) UpdateHandler(c *gin.Context) {
 		return
 	}
 
-	if err := h.Storage.Update(userID, postID, req.Data); err != nil {
+	if _, err := h.Storage.Update(c, userID, postID, req.Data); err != nil {
 		handleStorageError(c, err)
 		return
 	}
@@ -115,7 +115,7 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 	userID := c.Param("userid")
 	postID := c.Param("postid")
 
-	if err := h.Storage.Delete(userID, postID); err != nil {
+	if err := h.Storage.Delete(c, userID, postID); err != nil {
 		handleStorageError(c, err)
 		return
 	}

@@ -1,13 +1,30 @@
 # A simple CRUD app
 
-Still lots to do.
+Still lots to do:
+- Use grpc-gateway instead of gin
 - Tests
 - Tracing
-- Other storage
+- Other storage: redis, dynamodb, ...?
 
 ## Run the app
 
-Execute `make run` and (by default) the service should be listening on `127.0.0.1:8080`.
+Depending on the storage type you want, run one of the following commands. If everything works fine the should be listening on `127.0.0.1:8080`.
+
+```
+make run  # defaults to memory
+make run-postgres
+```
+
+### Tests
+
+You will need Postgres running. You can use:
+```
+docker compose up -d
+```
+Then
+```
+make test
+```
 
 ## Create
 
@@ -45,10 +62,4 @@ curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
 To delete user 1's post 2: 
 ```
 curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
-```
-
-## Run tests
-
-```
-go test ./...
 ```
