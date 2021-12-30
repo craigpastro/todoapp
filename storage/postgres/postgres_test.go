@@ -79,7 +79,7 @@ func TestReadNotExists(t *testing.T) {
 	userID := myid.New()
 	_, err := db.Read(ctx, userID, "1")
 	if err != storage.ErrPostDoesNotExist {
-		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+		t.Errorf("wanted '%s', but got '%s'", storage.ErrPostDoesNotExist, err)
 	}
 }
 
