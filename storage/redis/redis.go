@@ -22,6 +22,11 @@ func New(ctx context.Context, addr, password string) (storage.Storage, error) {
 		Password: password,
 	})
 
+	_, err := client.Ping(ctx).Result()
+	if err != nil {
+		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
+	}
+
 	return &Redis{client: client}, nil
 }
 

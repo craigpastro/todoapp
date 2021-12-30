@@ -3,13 +3,16 @@ package main
 import (
 	"context"
 	"log"
+	"net"
 
-	"github.com/craigpastro/crudapp/router"
+	pb "github.com/craigpastro/crudapp/api/proto/v1"
+	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/kelseyhightower/envconfig"
+	"google.golang.org/grpc"
 )
 
 type Config struct {
@@ -34,11 +37,19 @@ func main() {
 func Run(ctx context.Context, config Config) {
 	storage, err := NewStorage(ctx, config)
 	if err != nil {
-		log.Fatal("error initializing storage", err)
+		log.Fatalf("error initializing storage: %s", err)
 	}
 
-	if err := router.Run(config.ServerAddr, storage); err != nil {
-		log.Fatal("error starting the server", err)
+	s := grpc.NewServer()
+	pb.RegisterServiceServer(s, server.NewServer(storage))
+
+	lis, err := net.Listen("tcp", config.ServerAddr)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 

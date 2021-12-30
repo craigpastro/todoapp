@@ -8,15 +8,20 @@ Still lots to do:
 
 ## Run the app
 
-Depending on the storage type you want, run one of the following commands. If you are going to run Postgres you will need to build the tables first. Can use `make create-postgres-table` for this purpose. You will need to have `psql` installed.
-
-Once you run one of the following commands, if everything works fine the service should be listening on `127.0.0.1:8080`.
-
+Depending on the storage type you want, run one of the following commands.
 ```
 make run  # defaults to memory
 make run-postgres
 make run-redis
 ```
+
+You may need the appropriate storage running. If you want to use a container for this purpose you can
+```
+docker compose up STORAGE_TYPE -d
+```
+If you are going to run `postgres` the tables will need to be created first; you can `make create-postgres-table` for this purpose. You will need to have `psql` installed.
+
+If everything works fine the service should be listening on `127.0.0.1:8080`.
 
 ### Tests
 
@@ -35,38 +40,35 @@ docker compose down
 
 ## Create
 
+To create a new post for user 1:
 ```
-curl -XPOST -i 127.0.0.1:8080/v1/users/1/posts \
-  -H 'Content-Type: application/json' \
-  -d '{"data": "a great post"}'
+grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "data": "a great post"}' 127.0.0.1:8080 api.proto.v1.Service/Create
 ```
 
 ## Read
 
 To get user 1's post 2: 
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/1/posts/2
+grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2"}' 127.0.0.1:8080 api.proto.v1.Service/Read
 ```
 
 ## ReadAll
 
-To get all user 1's posts: 
+To get all user 1's posts:
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/1/posts
+grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1"}' 127.0.0.1:8080 api.proto.v1.Service/ReadAll
 ```
 
 ## Update
 
 To update user 1's post 2: 
 ```
-curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
-  -H 'Content-Type: application/json' \
-  -d '{"data": "update my great post"}'
+grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2", "data": "update my great post"}' 127.0.0.1:8080 api.proto.v1.Service/Update
 ```
 
 ## Delete
 
 To delete user 1's post 2: 
 ```
-curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
+grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2"}' 127.0.0.1:8080 api.proto.v1.Service/Delete
 ```
