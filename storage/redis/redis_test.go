@@ -1,4 +1,4 @@
-package postgres
+package redis
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -17,11 +17,12 @@ const data = "some data"
 
 var (
 	ctx context.Context
-	db  *Postgres
+	db  *Redis
 )
 
 type Config struct {
-	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
+	RedisAddr     string `split_words:"true" default:"localhost:6379"`
+	RedisPassword string `split_words:"true" default:""`
 }
 
 func TestMain(m *testing.M) {
@@ -31,24 +32,13 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	client := redis.NewClient(&redis.Options{
+		Addr:     config.RedisAddr,
+		Password: config.RedisPassword,
+	})
+
 	ctx = context.Background()
-	pool, err := pgxpool.Connect(ctx, config.PostgresURI)
-	if err != nil {
-		fmt.Println("error initializing Postgres")
-		os.Exit(1)
-	}
-
-	pool.Exec(ctx, `DROP TABLE IF EXISTS post`)
-	pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
-		user_id TEXT NOT NULL,
-		post_id TEXT NOT NULL,
-		data TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		PRIMARY KEY (user_id, post_id)
-	)`)
-
-	db = &Postgres{pool: pool}
+	db = &Redis{client: client}
 
 	os.Exit(m.Run())
 }
@@ -79,7 +69,7 @@ func TestReadNotExists(t *testing.T) {
 	userID := myid.New()
 	_, err := db.Read(ctx, userID, "1")
 	if err != storage.ErrPostDoesNotExist {
-		t.Errorf("wanted '%s', but got '%s'", storage.ErrPostDoesNotExist, err)
+		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
 	}
 }
 
@@ -118,7 +108,7 @@ func TestUpdateNotExists(t *testing.T) {
 	userID := myid.New()
 	_, err := db.Update(ctx, userID, "1", "new data")
 	if err != storage.ErrPostDoesNotExist {
-		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+		t.Errorf("wanted '%s', but got '%s'", storage.ErrPostDoesNotExist, err)
 	}
 }
 

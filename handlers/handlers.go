@@ -32,6 +32,7 @@ type ReadResponse struct {
 	PostID    string    `json:"postID"`
 	Data      string    `json:"data"`
 	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 type ReadAllResponse struct {
@@ -89,6 +90,7 @@ func (h *Handler) ReadAllHandler(c *gin.Context) {
 			PostID:    record.PostID,
 			Data:      record.Data,
 			CreatedAt: record.CreatedAt,
+			UpdatedAt: record.UpdatedAt,
 		})
 	}
 
@@ -125,8 +127,6 @@ func (h *Handler) DeleteHandler(c *gin.Context) {
 
 func handleStorageError(c *gin.Context, err error) {
 	if errors.Is(err, storage.ErrPostDoesNotExist) {
-		c.Status(http.StatusBadRequest)
-	} else if errors.Is(err, storage.ErrUserDoesNotExist) {
 		c.Status(http.StatusBadRequest)
 	} else {
 		c.Status(http.StatusInternalServerError)
