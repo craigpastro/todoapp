@@ -9,15 +9,14 @@ import (
 var (
 	ErrPostDoesNotExist     = errors.New("post does not exist")
 	ErrUndefinedStorageType = errors.New("undefined storage type")
-	ErrUserDoesNotExist     = errors.New("user does not exist")
 )
 
 type Record struct {
-	UserID    string
-	PostID    string
-	Data      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	UserID    string    `json:"userID"`
+	PostID    string    `json:"postID"`
+	Data      string    `json:"data"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func NewRecord(userID, postID, data string, createdAt time.Time, updatedAt time.Time) *Record {

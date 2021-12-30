@@ -16,8 +16,8 @@ import (
 const data = "some data"
 
 var (
-	ctx      context.Context
-	postgres *Postgres
+	ctx context.Context
+	db  *Postgres
 )
 
 type Config struct {
@@ -48,15 +48,15 @@ func TestMain(m *testing.M) {
 		PRIMARY KEY (user_id, post_id)
 	)`)
 
-	postgres = &Postgres{pool: pool}
+	db = &Postgres{pool: pool}
 
 	os.Exit(m.Run())
 }
 
 func TestRead(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := postgres.Create(ctx, userID, data)
-	record, err := postgres.Read(ctx, userID, postID)
+	postID, _, _ := db.Create(ctx, userID, data)
+	record, err := db.Read(ctx, userID, postID)
 
 	if err != nil {
 		t.Errorf("error not nil: %s", err)
@@ -75,11 +75,19 @@ func TestRead(t *testing.T) {
 	}
 }
 
+func TestReadNotExists(t *testing.T) {
+	userID := myid.New()
+	_, err := db.Read(ctx, userID, "1")
+	if err != storage.ErrPostDoesNotExist {
+		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+	}
+}
+
 func TestReadAll(t *testing.T) {
 	userID := myid.New()
-	postgres.Create(ctx, userID, "data 1")
-	postgres.Create(ctx, userID, "data 2")
-	records, err := postgres.ReadAll(ctx, userID)
+	db.Create(ctx, userID, "data 1")
+	db.Create(ctx, userID, "data 2")
+	records, err := db.ReadAll(ctx, userID)
 
 	if err != nil {
 		t.Errorf("error not nil: %s", err)
@@ -92,10 +100,10 @@ func TestReadAll(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := postgres.Create(ctx, userID, data)
+	postID, _, _ := db.Create(ctx, userID, data)
 	newData := "new data"
-	postgres.Update(ctx, userID, postID, newData)
-	record, _ := postgres.Read(ctx, userID, postID)
+	db.Update(ctx, userID, postID, newData)
+	record, _ := db.Read(ctx, userID, postID)
 
 	if record.Data != newData {
 		t.Errorf("wrong data. got '%s', want '%s'", record.Data, newData)
@@ -106,17 +114,25 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdateNotExists(t *testing.T) {
+	userID := myid.New()
+	_, err := db.Update(ctx, userID, "1", "new data")
+	if err != storage.ErrPostDoesNotExist {
+		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := postgres.Create(ctx, userID, data)
-	err := postgres.Delete(ctx, userID, postID)
+	postID, _, _ := db.Create(ctx, userID, data)
+	err := db.Delete(ctx, userID, postID)
 
 	if err != nil {
 		t.Errorf("error not nil: %s", err)
 	}
 
-	// Now try to read the delete record; it should not exist.
-	_, err = postgres.Read(ctx, userID, postID)
+	// Now try to read the deleted record; it should not exist.
+	_, err = db.Read(ctx, userID, postID)
 	if !errors.Is(err, storage.ErrPostDoesNotExist) {
 		t.Errorf("unexpected error. got '%v', want '%v'", err, storage.ErrPostDoesNotExist)
 	}

@@ -8,6 +8,7 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/postgres"
+	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -16,6 +17,9 @@ type Config struct {
 	StorageType string `split_words:"true" default:"memory"`
 
 	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
+
+	RedisAddr     string `split_words:"true" default:"localhost:6379"`
+	RedisPassword string `split_words:"true" default:""`
 }
 
 func main() {
@@ -44,6 +48,8 @@ func NewStorage(ctx context.Context, config Config) (storage.Storage, error) {
 		return memory.New(), nil
 	case "postgres":
 		return postgres.New(ctx, config.PostgresURI)
+	case "redis":
+		return redis.New(ctx, config.RedisAddr, config.RedisPassword)
 	default:
 		return nil, storage.ErrUndefinedStorageType
 	}

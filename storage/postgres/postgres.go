@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +40,7 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 	row := p.pool.QueryRow(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1 AND post_id = $2", userID, postID)
 	record := &storage.Record{}
 	err := row.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, storage.ErrPostDoesNotExist
 	} else if err != nil {
 		return nil, fmt.Errorf("error reading: %w", err)
@@ -65,8 +66,11 @@ func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 }
 
 func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
-	if _, err := p.Read(ctx, userID, postID); err != nil {
-		return time.Time{}, fmt.Errorf("error reading: %w", err)
+	_, err := p.Read(ctx, userID, postID)
+	if errors.Is(err, storage.ErrPostDoesNotExist) {
+		return time.Time{}, err
+	} else if err != nil {
+		return time.Time{}, fmt.Errorf("error updating: %w", err)
 	}
 
 	now := time.Now()

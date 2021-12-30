@@ -3,7 +3,12 @@ services:
   postgres:
     image: postgres:14.1
     ports:
-      - "5432:5432"
+      - 5432:5432
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
+
+  redis:
+    image: redis:6.2
+    ports:
+      - 6379:6379

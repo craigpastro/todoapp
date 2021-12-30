@@ -33,6 +33,15 @@ func TestRead(t *testing.T) {
 	}
 }
 
+func TestReadNotExists(t *testing.T) {
+	db := New()
+	ctx := context.Background()
+	_, err := db.Read(ctx, userID, "1")
+	if err != storage.ErrPostDoesNotExist {
+		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+	}
+}
+
 func TestReadAll(t *testing.T) {
 	db := New()
 	ctx := context.Background()
@@ -61,6 +70,15 @@ func TestUpdate(t *testing.T) {
 
 	if record.CreatedAt.After(record.UpdatedAt) {
 		t.Errorf("createdAt is after updatedAt")
+	}
+}
+
+func TestUpdateNotExists(t *testing.T) {
+	db := New()
+	ctx := context.Background()
+	_, err := db.Update(ctx, userID, "1", "new data")
+	if err != storage.ErrPostDoesNotExist {
+		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
 	}
 }
 
