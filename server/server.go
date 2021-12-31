@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	pb "github.com/craigpastro/crudapp/api/proto/v1"
+	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

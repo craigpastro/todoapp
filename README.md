@@ -1,7 +1,7 @@
 # A simple CRUD app
 
 Still lots to do:
-- Use grpc-gateway instead of gin
+- Add validators to gRPC
 - Tests
 - Tracing
 - Other storage: dynamodb, ?
@@ -42,33 +42,37 @@ docker compose down
 
 To create a new post for user 1:
 ```
-grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "data": "a great post"}' 127.0.0.1:8080 api.proto.v1.Service/Create
+curl -XPOST -i 127.0.0.1:8080/v1/users/1/posts \
+  -H 'Content-Type: application/json' \
+  -d '{"data": "a great post"}'
 ```
 
 ## Read
 
 To get user 1's post 2: 
 ```
-grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2"}' 127.0.0.1:8080 api.proto.v1.Service/Read
+curl -XGET -i 127.0.0.1:8080/v1/users/1/posts/2
 ```
 
 ## ReadAll
 
 To get all user 1's posts:
 ```
-grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1"}' 127.0.0.1:8080 api.proto.v1.Service/ReadAll
+curl -XGET -i 127.0.0.1:8080/v1/users/1/posts
 ```
 
 ## Update
 
 To update user 1's post 2: 
 ```
-grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2", "data": "update my great post"}' 127.0.0.1:8080 api.proto.v1.Service/Update
+curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
+  -H 'Content-Type: application/json' \
+  -d '{"data": "update my great post"}'
 ```
 
 ## Delete
 
 To delete user 1's post 2: 
 ```
-grpcurl -plaintext -import-path ./api/proto/v1 -proto service.proto -d '{"userId": "1", "postId": "2"}' 127.0.0.1:8080 api.proto.v1.Service/Delete
+curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
 ```
