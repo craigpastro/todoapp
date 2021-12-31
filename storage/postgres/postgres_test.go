@@ -59,19 +59,19 @@ func TestRead(t *testing.T) {
 	record, err := db.Read(ctx, userID, postID)
 
 	if err != nil {
-		t.Errorf("error not nil: %s", err)
+		t.Errorf("error not nil: %v", err)
 	}
 
 	if record.UserID != userID {
-		t.Errorf("wrong userID. got '%s', want '%s'", record.UserID, userID)
+		t.Errorf("wrong userID: got '%s', but wanted '%s'", record.UserID, userID)
 	}
 
 	if record.PostID != postID {
-		t.Errorf("wrong postID. got '%s', want '%s'", record.PostID, postID)
+		t.Errorf("wrong postID: got '%s', but wanted '%s'", record.PostID, postID)
 	}
 
 	if record.Data != data {
-		t.Errorf("wrong data. got '%s', want '%s'", record.Data, data)
+		t.Errorf("wrong data: got '%s', but wanted '%s'", record.Data, data)
 	}
 }
 
@@ -79,7 +79,7 @@ func TestReadNotExists(t *testing.T) {
 	userID := myid.New()
 	_, err := db.Read(ctx, userID, "1")
 	if err != storage.ErrPostDoesNotExist {
-		t.Errorf("wanted '%s', but got '%s'", storage.ErrPostDoesNotExist, err)
+		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }
 
@@ -90,11 +90,11 @@ func TestReadAll(t *testing.T) {
 	records, err := db.ReadAll(ctx, userID)
 
 	if err != nil {
-		t.Errorf("error not nil: %s", err)
+		t.Errorf("error not nil: %v", err)
 	}
 
 	if len(records) != 2 {
-		t.Errorf("wrong number of records. got '%d', want '%d'", len(records), 2)
+		t.Errorf("wrong number of records: got '%d', but wanted '%d'", len(records), 2)
 	}
 }
 
@@ -106,7 +106,7 @@ func TestUpdate(t *testing.T) {
 	record, _ := db.Read(ctx, userID, postID)
 
 	if record.Data != newData {
-		t.Errorf("wrong data. got '%s', want '%s'", record.Data, newData)
+		t.Errorf("wrong data: got '%s', but wanted '%s'", record.Data, newData)
 	}
 
 	if record.CreatedAt.After(record.UpdatedAt) {
@@ -118,7 +118,7 @@ func TestUpdateNotExists(t *testing.T) {
 	userID := myid.New()
 	_, err := db.Update(ctx, userID, "1", "new data")
 	if err != storage.ErrPostDoesNotExist {
-		t.Errorf("wanted ErrPostDoesNotExist, but got: %s", err)
+		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }
 
@@ -128,12 +128,12 @@ func TestDelete(t *testing.T) {
 	err := db.Delete(ctx, userID, postID)
 
 	if err != nil {
-		t.Errorf("error not nil: %s", err)
+		t.Errorf("error not nil: %v", err)
 	}
 
 	// Now try to read the deleted record; it should not exist.
 	_, err = db.Read(ctx, userID, postID)
 	if !errors.Is(err, storage.ErrPostDoesNotExist) {
-		t.Errorf("unexpected error. got '%v', want '%v'", err, storage.ErrPostDoesNotExist)
+		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }

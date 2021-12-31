@@ -45,7 +45,7 @@ func main() {
 func run(ctx context.Context, config Config) {
 	storage, err := newStorage(ctx, config)
 	if err != nil {
-		log.Fatalf("error initializing storage: %s", err)
+		log.Fatalf("error initializing storage: %v", err)
 	}
 
 	s := grpc.NewServer()
