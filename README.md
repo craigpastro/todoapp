@@ -23,7 +23,7 @@ If you are going to run `postgres` the tables will need to be created first; you
 
 If everything works fine the service should be listening on `127.0.0.1:8080`.
 
-### Tests
+## Tests
 
 You will need Postgres and Redis running. You can use:
 ```
@@ -38,7 +38,9 @@ If you want to bring the containers down:
 docker compose down
 ```
 
-## Create
+## API
+
+### Create
 
 To create a new post for user 1:
 ```
@@ -47,21 +49,21 @@ curl -XPOST -i 127.0.0.1:8080/v1/users/1/posts \
   -d '{"data": "a great post"}'
 ```
 
-## Read
+### Read
 
 To get user 1's post 2: 
 ```
 curl -XGET -i 127.0.0.1:8080/v1/users/1/posts/2
 ```
 
-## ReadAll
+### ReadAll
 
 To get all user 1's posts:
 ```
 curl -XGET -i 127.0.0.1:8080/v1/users/1/posts
 ```
 
-## Update
+### Update
 
 To update user 1's post 2: 
 ```
@@ -70,7 +72,7 @@ curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
   -d '{"data": "update my great post"}'
 ```
 
-## Delete
+### Delete
 
 To delete user 1's post 2: 
 ```
