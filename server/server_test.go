@@ -11,6 +11,7 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage/memory"
+	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
@@ -25,7 +26,7 @@ var lis *bufconn.Listener
 
 func TestMain(m *testing.M) {
 	s := grpc.NewServer()
-	pb.RegisterServiceServer(s, NewServer(memory.New()))
+	pb.RegisterServiceServer(s, NewServer(otel.Tracer("noop"), memory.New()))
 	lis = bufconn.Listen(bufSize)
 	go func() {
 		if err := s.Serve(lis); err != nil {

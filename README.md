@@ -1,8 +1,7 @@
 # A simple CRUD app
 
-Still lots to do:
+What else to do? I welcome suggestions.
 - Add validators to gRPC
-- Tests
 - Tracing
 - Other storage: dynamodb, ?
 
