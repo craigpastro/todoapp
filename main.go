@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/craigpastro/crudapp/instrumentation/tracer"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
@@ -48,8 +49,9 @@ func run(ctx context.Context, config Config) {
 		log.Fatalf("error initializing storage: %v", err)
 	}
 
+	tracer := tracer.New()
 	s := grpc.NewServer()
-	pb.RegisterServiceServer(s, server.NewServer(storage))
+	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
 
 	lis, err := net.Listen("tcp", config.RPCAddr)
 	if err != nil {
