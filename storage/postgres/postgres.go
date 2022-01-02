@@ -10,19 +10,24 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Postgres struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	tracer trace.Tracer
 }
 
-func New(ctx context.Context, connectionURI string) (storage.Storage, error) {
+func New(ctx context.Context, tracer trace.Tracer, connectionURI string) (storage.Storage, error) {
 	pool, err := pgxpool.Connect(ctx, connectionURI)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to Postgres: %w", err)
 	}
 
-	return &Postgres{pool: pool}, nil
+	return &Postgres{
+		pool:   pool,
+		tracer: tracer,
+	}, nil
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (string, time.Time, error) {

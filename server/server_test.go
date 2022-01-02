@@ -26,7 +26,8 @@ var lis *bufconn.Listener
 
 func TestMain(m *testing.M) {
 	s := grpc.NewServer()
-	pb.RegisterServiceServer(s, NewServer(otel.Tracer("noop"), memory.New()))
+	tracer := otel.Tracer("noop")
+	pb.RegisterServiceServer(s, NewServer(tracer, memory.New(tracer)))
 	lis = bufconn.Listen(bufSize)
 	go func() {
 		if err := s.Serve(lis); err != nil {

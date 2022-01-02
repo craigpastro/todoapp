@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/exporters/otlp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpgrpc"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
@@ -25,13 +26,13 @@ func New(ctx context.Context, enabled bool, config Config) (trace.Tracer, error)
 		return otel.Tracer("noop"), nil
 	}
 
-	driver := otlpgrpc.NewDriver(
-		otlpgrpc.WithInsecure(),
-		otlpgrpc.WithEndpoint(config.Endpoint),
-		otlpgrpc.WithDialOption(grpc.WithBlock()),
+	client := otlptracegrpc.NewClient(
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithEndpoint(config.Endpoint),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
 
-	exp, err := otlp.NewExporter(ctx, driver)
+	exp, err := otlptrace.New(ctx, client)
 	if err != nil {
 		return nil, err
 	}
@@ -57,4 +58,9 @@ func New(ctx context.Context, enabled bool, config Config) (trace.Tracer, error)
 	otel.SetTracerProvider(tp)
 
 	return tp.Tracer(config.ServiceName), nil
+}
+
+func TraceError(span trace.Span, err error) {
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
 }

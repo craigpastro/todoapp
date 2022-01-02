@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -16,13 +15,9 @@ import (
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-
-	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
-	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
 )
 
 type Config struct {
@@ -40,7 +35,7 @@ type Config struct {
 	RedisPassword string `split_words:"true" default:""`
 
 	TraceProviderEnabled bool   `split_words:"true" default:"true"`
-	TraceProviderURL     string `split_words:"true" default:"locaalhost:4318"`
+	TraceProviderURL     string `split_words:"true" default:"locaalhost:4317"`
 }
 
 func main() {
@@ -57,17 +52,17 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) {
-	storage, err := newStorage(ctx, config)
-	if err != nil {
-		log.Fatalf("error initializing storage: %v", err)
-	}
-
 	tracer, err := tracer.New(ctx, config.TraceProviderEnabled, tracer.Config{
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
 		Environment:    config.Environment,
 		Endpoint:       config.TraceProviderURL,
 	})
+
+	storage, err := newStorage(ctx, tracer, config)
+	if err != nil {
+		log.Fatalf("error initializing storage: %v", err)
+	}
 
 	s := grpc.NewServer()
 	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
@@ -89,35 +84,15 @@ func run(ctx context.Context, config Config) {
 	}
 }
 
-func newStorage(ctx context.Context, config Config) (storage.Storage, error) {
+func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "memory":
-		return memory.New(), nil
+		return memory.New(tracer), nil
 	case "postgres":
-		return postgres.New(ctx, config.PostgresURI)
+		return postgres.New(ctx, tracer, config.PostgresURI)
 	case "redis":
-		return redis.New(ctx, config.RedisAddr, config.RedisPassword)
+		return redis.New(ctx, tracer, config.RedisAddr, config.RedisPassword)
 	default:
 		return nil, storage.ErrUndefinedStorageType
 	}
-}
-
-func newExporter(w io.Writer) (trace.SpanExporter, error) {
-	return stdouttrace.New(
-		stdouttrace.WithWriter(w),
-		stdouttrace.WithPrettyPrint(),
-		stdouttrace.WithoutTimestamps(),
-	)
-}
-
-func newResource() *resource.Resource {
-	r, _ := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("crudapp"),
-			semconv.ServiceVersionKey.String("v0.1.0"),
-		),
-	)
-	return r
 }

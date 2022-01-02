@@ -6,14 +6,19 @@ import (
 
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type MemoryDB struct {
-	store map[string]map[string]*storage.Record
+	store  map[string]map[string]*storage.Record
+	tracer trace.Tracer
 }
 
-func New() storage.Storage {
-	return &MemoryDB{store: map[string]map[string]*storage.Record{}}
+func New(tracer trace.Tracer) storage.Storage {
+	return &MemoryDB{
+		store:  map[string]map[string]*storage.Record{},
+		tracer: tracer,
+	}
 }
 
 func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {

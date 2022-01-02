@@ -10,13 +10,15 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/go-redis/redis/v8"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Redis struct {
 	client *redis.Client
+	tracer trace.Tracer
 }
 
-func New(ctx context.Context, addr, password string) (storage.Storage, error) {
+func New(ctx context.Context, tracer trace.Tracer, addr, password string) (storage.Storage, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
@@ -27,7 +29,10 @@ func New(ctx context.Context, addr, password string) (storage.Storage, error) {
 		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
 	}
 
-	return &Redis{client: client}, nil
+	return &Redis{
+		client: client,
+		tracer: tracer,
+	}, nil
 }
 
 func (r *Redis) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
