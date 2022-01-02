@@ -1,4 +1,4 @@
-package tracer
+package instrumentation
 
 import (
 	"context"
@@ -14,14 +14,14 @@ import (
 	"google.golang.org/grpc"
 )
 
-type Config struct {
+type TracerConfig struct {
 	ServiceName    string
 	ServiceVersion string
 	Environment    string
 	Endpoint       string
 }
 
-func New(ctx context.Context, enabled bool, config Config) (trace.Tracer, error) {
+func NewTracer(ctx context.Context, enabled bool, config TracerConfig) (trace.Tracer, error) {
 	if !enabled {
 		return otel.Tracer("noop"), nil
 	}

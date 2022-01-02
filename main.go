@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/craigpastro/crudapp/instrumentation/tracer"
+	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
@@ -52,7 +52,7 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) {
-	tracer, err := tracer.New(ctx, config.TraceProviderEnabled, tracer.Config{
+	tracer, err := instrumentation.NewTracer(ctx, config.TraceProviderEnabled, instrumentation.TracerConfig{
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
 		Environment:    config.Environment,

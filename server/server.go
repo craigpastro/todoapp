@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/craigpastro/crudapp/instrumentation/tracer"
+	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,7 +36,7 @@ func (s *server) Create(ctx context.Context, in *pb.CreateRequest) (*pb.CreateRe
 
 	postID, createdAt, err := s.Storage.Create(ctx, userID, in.Data)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, handleStorageError(err)
 	}
 
@@ -54,7 +54,7 @@ func (s *server) Read(ctx context.Context, in *pb.ReadRequest) (*pb.ReadResponse
 
 	record, err := s.Storage.Read(ctx, userID, postID)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, handleStorageError(err)
 	}
 
@@ -74,7 +74,7 @@ func (s *server) ReadAll(ctx context.Context, in *pb.ReadAllRequest) (*pb.ReadAl
 
 	records, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, handleStorageError(err)
 	}
 
@@ -100,7 +100,7 @@ func (s *server) Update(ctx context.Context, in *pb.UpdateRequest) (*pb.UpdateRe
 
 	updatedAt, err := s.Storage.Update(ctx, userID, postID, in.Data)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, handleStorageError(err)
 	}
 
@@ -117,7 +117,7 @@ func (s *server) Delete(ctx context.Context, in *pb.DeleteRequest) (*emptypb.Emp
 	defer span.End()
 
 	if err := s.Storage.Delete(ctx, userID, postID); err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return &emptypb.Empty{}, handleStorageError(err)
 	}
 

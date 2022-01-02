@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/go-redis/redis/v8"
@@ -32,13 +33,18 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	tracer, _ := instrumentation.NewTracer(ctx, false, instrumentation.TracerConfig{})
+
 	client := redis.NewClient(&redis.Options{
 		Addr:     config.RedisAddr,
 		Password: config.RedisPassword,
 	})
 
 	ctx = context.Background()
-	db = &Redis{client: client}
+	db = &Redis{
+		client: client,
+		tracer: tracer,
+	}
 
 	os.Exit(m.Run())
 }

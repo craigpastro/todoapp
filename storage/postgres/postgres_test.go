@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -32,6 +33,9 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
+
+	tracer, _ := instrumentation.NewTracer(ctx, false, instrumentation.TracerConfig{})
+
 	pool, err := pgxpool.Connect(ctx, config.PostgresURI)
 	if err != nil {
 		fmt.Println("error initializing Postgres")
@@ -48,7 +52,10 @@ func TestMain(m *testing.M) {
 		PRIMARY KEY (user_id, post_id)
 	)`)
 
-	db = &Postgres{pool: pool}
+	db = &Postgres{
+		pool:   pool,
+		tracer: tracer,
+	}
 
 	os.Exit(m.Run())
 }

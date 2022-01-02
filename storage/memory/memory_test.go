@@ -5,7 +5,10 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/craigpastro/crudapp/instrumentation"
+	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -13,10 +16,20 @@ const (
 	data   = "some data"
 )
 
-func TestRead(t *testing.T) {
-	db := New()
-	ctx := context.Background()
+var (
+	ctx    context.Context
+	tracer trace.Tracer
+	db     storage.Storage
+)
 
+func TestMain(m *testing.M) {
+	ctx = context.Background()
+	tracer, _ = instrumentation.NewTracer(ctx, false, instrumentation.TracerConfig{})
+	db = New(tracer)
+}
+
+func TestRead(t *testing.T) {
+	userID := myid.New()
 	postID, _, _ := db.Create(ctx, userID, data)
 	record, _ := db.Read(ctx, userID, postID)
 
@@ -34,8 +47,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadNotExists(t *testing.T) {
-	db := New()
-	ctx := context.Background()
+	userID := myid.New()
 	_, err := db.Read(ctx, userID, "1")
 	if err != storage.ErrPostDoesNotExist {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
@@ -43,9 +55,7 @@ func TestReadNotExists(t *testing.T) {
 }
 
 func TestReadAll(t *testing.T) {
-	db := New()
-	ctx := context.Background()
-
+	userID := myid.New()
 	db.Create(ctx, userID, "data 1")
 	db.Create(ctx, userID, "data 2")
 	records, _ := db.ReadAll(ctx, userID)
@@ -56,9 +66,7 @@ func TestReadAll(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	db := New()
-	ctx := context.Background()
-
+	userID := myid.New()
 	postID, _, _ := db.Create(ctx, userID, data)
 	newData := "new data"
 	db.Update(ctx, userID, postID, newData)
@@ -74,8 +82,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateNotExists(t *testing.T) {
-	db := New()
-	ctx := context.Background()
+	userID := myid.New()
 	_, err := db.Update(ctx, userID, "1", "new data")
 	if err != storage.ErrPostDoesNotExist {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
@@ -83,9 +90,7 @@ func TestUpdateNotExists(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	db := New()
-	ctx := context.Background()
-
+	userID := myid.New()
 	postID, _, _ := db.Create(ctx, userID, data)
 	db.Delete(ctx, userID, postID)
 	_, err := db.Read(ctx, userID, postID)
