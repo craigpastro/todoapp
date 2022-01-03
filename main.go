@@ -52,7 +52,8 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) {
-	tracer, err := instrumentation.NewTracer(ctx, config.TraceProviderEnabled, instrumentation.TracerConfig{
+	tracer, err := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{
+		Enabled:        config.TraceProviderEnabled,
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
 		Environment:    config.Environment,

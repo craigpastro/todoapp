@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	tracer, _ := instrumentation.NewTracer(ctx, false, instrumentation.TracerConfig{})
+	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
 	client := redis.NewClient(&redis.Options{
 		Addr:     config.RedisAddr,

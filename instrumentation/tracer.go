@@ -15,14 +15,15 @@ import (
 )
 
 type TracerConfig struct {
+	Enabled        bool
 	ServiceName    string
 	ServiceVersion string
 	Environment    string
 	Endpoint       string
 }
 
-func NewTracer(ctx context.Context, enabled bool, config TracerConfig) (trace.Tracer, error) {
-	if !enabled {
+func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
+	if !config.Enabled {
 		return otel.Tracer("noop"), nil
 	}
 

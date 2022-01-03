@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 
 	ctx = context.Background()
 
-	tracer, _ := instrumentation.NewTracer(ctx, false, instrumentation.TracerConfig{})
+	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
 	pool, err := pgxpool.Connect(ctx, config.PostgresURI)
 	if err != nil {
