@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
@@ -14,11 +15,16 @@ import (
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )
 
 type Config struct {
+	ServiceName    string `split_words:"true" default:"crudapp"`
+	ServiceVersion string `default:"0.1.0"`
+	Environment    string `default:"dev"`
+
 	RPCAddr     string `split_words:"true" default:"localhost:9090"`
 	ServerAddr  string `split_words:"true" default:"localhost:8080"`
 	StorageType string `split_words:"true" default:"memory"`
@@ -27,6 +33,9 @@ type Config struct {
 
 	RedisAddr     string `split_words:"true" default:"localhost:6379"`
 	RedisPassword string `split_words:"true" default:""`
+
+	TraceProviderEnabled bool   `split_words:"true" default:"true"`
+	TraceProviderURL     string `split_words:"true" default:"localhost:4317"`
 }
 
 func main() {
@@ -43,13 +52,24 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) {
-	storage, err := newStorage(ctx, config)
+	tracer, err := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{
+		Enabled:        config.TraceProviderEnabled,
+		ServiceName:    config.ServiceName,
+		ServiceVersion: config.ServiceVersion,
+		Environment:    config.Environment,
+		Endpoint:       config.TraceProviderURL,
+	})
+	if err != nil {
+		log.Fatalf("error initializing tracer: %v", err)
+	}
+
+	storage, err := newStorage(ctx, tracer, config)
 	if err != nil {
 		log.Fatalf("error initializing storage: %v", err)
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterServiceServer(s, server.NewServer(storage))
+	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
 
 	lis, err := net.Listen("tcp", config.RPCAddr)
 	if err != nil {
@@ -63,19 +83,20 @@ func run(ctx context.Context, config Config) {
 		log.Fatalf("failed to register service: %v", err)
 	}
 
+	log.Printf("starting server on %s", config.ServerAddr)
 	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
 		log.Fatalf("failed to listen and serve: %v", err)
 	}
 }
 
-func newStorage(ctx context.Context, config Config) (storage.Storage, error) {
+func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "memory":
-		return memory.New(), nil
+		return memory.New(tracer), nil
 	case "postgres":
-		return postgres.New(ctx, config.PostgresURI)
+		return postgres.New(ctx, tracer, config.PostgresURI)
 	case "redis":
-		return redis.New(ctx, config.RedisAddr, config.RedisPassword)
+		return redis.New(ctx, tracer, config.RedisAddr, config.RedisPassword)
 	default:
 		return nil, storage.ErrUndefinedStorageType
 	}

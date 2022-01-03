@@ -6,17 +6,25 @@ import (
 
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type MemoryDB struct {
-	store map[string]map[string]*storage.Record
+	store  map[string]map[string]*storage.Record
+	tracer trace.Tracer
 }
 
-func New() storage.Storage {
-	return &MemoryDB{store: map[string]map[string]*storage.Record{}}
+func New(tracer trace.Tracer) storage.Storage {
+	return &MemoryDB{
+		store:  map[string]map[string]*storage.Record{},
+		tracer: tracer,
+	}
 }
 
 func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+	_, span := m.tracer.Start(ctx, "memory.Create")
+	defer span.End()
+
 	if m.store[userID] == nil {
 		m.store[userID] = map[string]*storage.Record{}
 	}
@@ -29,6 +37,9 @@ func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, tim
 }
 
 func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
+	_, span := m.tracer.Start(ctx, "memory.Read")
+	defer span.End()
+
 	record, ok := m.store[userID][postID]
 	if !ok {
 		return nil, storage.ErrPostDoesNotExist
@@ -38,8 +49,10 @@ func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
-	records, _ := m.store[userID]
+	_, span := m.tracer.Start(ctx, "memory.ReadAll")
+	defer span.End()
 
+	records := m.store[userID]
 	res := []*storage.Record{}
 	for _, record := range records {
 		res = append(res, record)
@@ -49,6 +62,9 @@ func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 }
 
 func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
+	_, span := m.tracer.Start(ctx, "memory.Update")
+	defer span.End()
+
 	post, ok := m.store[userID][postID]
 	if !ok {
 		return time.Time{}, storage.ErrPostDoesNotExist
@@ -61,6 +77,9 @@ func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (tim
 }
 
 func (m *MemoryDB) Delete(ctx context.Context, userID, postID string) error {
+	_, span := m.tracer.Start(ctx, "memory.Delete")
+	defer span.End()
+
 	delete(m.store[userID], postID)
 	return nil
 }

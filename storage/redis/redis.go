@@ -10,13 +10,15 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/go-redis/redis/v8"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Redis struct {
 	client *redis.Client
+	tracer trace.Tracer
 }
 
-func New(ctx context.Context, addr, password string) (storage.Storage, error) {
+func New(ctx context.Context, tracer trace.Tracer, addr, password string) (storage.Storage, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
@@ -27,10 +29,16 @@ func New(ctx context.Context, addr, password string) (storage.Storage, error) {
 		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
 	}
 
-	return &Redis{client: client}, nil
+	return &Redis{
+		client: client,
+		tracer: tracer,
+	}, nil
 }
 
 func (r *Redis) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+	ctx, span := r.tracer.Start(ctx, "redis.Create")
+	defer span.End()
+
 	postID := myid.New()
 	now := time.Now()
 	record, err := json.Marshal(storage.NewRecord(userID, postID, data, now, now))
@@ -47,6 +55,9 @@ func (r *Redis) Create(ctx context.Context, userID, data string) (string, time.T
 }
 
 func (r *Redis) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
+	ctx, span := r.tracer.Start(ctx, "redis.Read")
+	defer span.End()
+
 	record, err := r.client.HGet(ctx, userID, postID).Result()
 	if errors.Is(err, redis.Nil) {
 		return nil, storage.ErrPostDoesNotExist
@@ -63,6 +74,9 @@ func (r *Redis) Read(ctx context.Context, userID, postID string) (*storage.Recor
 }
 
 func (r *Redis) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
+	ctx, span := r.tracer.Start(ctx, "redis.ReadAll")
+	defer span.End()
+
 	records, err := r.client.HGetAll(ctx, userID).Result()
 	if err != nil {
 		return nil, fmt.Errorf("error reading all: %w", err)
@@ -81,6 +95,9 @@ func (r *Redis) ReadAll(ctx context.Context, userID string) ([]*storage.Record, 
 }
 
 func (r *Redis) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
+	ctx, span := r.tracer.Start(ctx, "redis.Update")
+	defer span.End()
+
 	record, err := r.Read(ctx, userID, postID)
 	if errors.Is(err, storage.ErrPostDoesNotExist) {
 		return time.Time{}, err
@@ -103,6 +120,9 @@ func (r *Redis) Update(ctx context.Context, userID, postID, data string) (time.T
 }
 
 func (r *Redis) Delete(ctx context.Context, userID, postID string) error {
+	ctx, span := r.tracer.Start(ctx, "redis.Delete")
+	defer span.End()
+
 	if _, err := r.client.HDel(ctx, userID, postID).Result(); err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}

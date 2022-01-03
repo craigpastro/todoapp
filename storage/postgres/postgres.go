@@ -10,22 +10,30 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Postgres struct {
-	pool *pgxpool.Pool
+	pool   *pgxpool.Pool
+	tracer trace.Tracer
 }
 
-func New(ctx context.Context, connectionURI string) (storage.Storage, error) {
+func New(ctx context.Context, tracer trace.Tracer, connectionURI string) (storage.Storage, error) {
 	pool, err := pgxpool.Connect(ctx, connectionURI)
 	if err != nil {
 		return nil, fmt.Errorf("unable to connect to Postgres: %w", err)
 	}
 
-	return &Postgres{pool: pool}, nil
+	return &Postgres{
+		pool:   pool,
+		tracer: tracer,
+	}, nil
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+	ctx, span := p.tracer.Start(ctx, "postgres.Create")
+	defer span.End()
+
 	postID := myid.New()
 	now := time.Now()
 	_, err := p.pool.Exec(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now)
@@ -37,6 +45,9 @@ func (p *Postgres) Create(ctx context.Context, userID, data string) (string, tim
 }
 
 func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
+	ctx, span := p.tracer.Start(ctx, "postgres.Read")
+	defer span.End()
+
 	row := p.pool.QueryRow(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1 AND post_id = $2", userID, postID)
 	record := &storage.Record{}
 	err := row.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt)
@@ -50,6 +61,9 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
+	ctx, span := p.tracer.Start(ctx, "postgres.ReadAll")
+	defer span.End()
+
 	rows, err := p.pool.Query(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1", userID)
 	if err != nil {
 		return nil, fmt.Errorf("error reading all: %w", err)
@@ -66,6 +80,9 @@ func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 }
 
 func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
+	ctx, span := p.tracer.Start(ctx, "postgres.Update")
+	defer span.End()
+
 	_, err := p.Read(ctx, userID, postID)
 	if errors.Is(err, storage.ErrPostDoesNotExist) {
 		return time.Time{}, err
@@ -82,6 +99,9 @@ func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (tim
 }
 
 func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
+	ctx, span := p.tracer.Start(ctx, "postgres.Delete")
+	defer span.End()
+
 	if _, err := p.pool.Exec(ctx, "DELETE FROM post WHERE user_id = $1 AND post_id = $2", userID, postID); err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
