@@ -35,7 +35,7 @@ type Config struct {
 	RedisPassword string `split_words:"true" default:""`
 
 	TraceProviderEnabled bool   `split_words:"true" default:"true"`
-	TraceProviderURL     string `split_words:"true" default:"locaalhost:4317"`
+	TraceProviderURL     string `split_words:"true" default:"localhost:4317"`
 }
 
 func main() {
@@ -58,6 +58,9 @@ func run(ctx context.Context, config Config) {
 		Environment:    config.Environment,
 		Endpoint:       config.TraceProviderURL,
 	})
+	if err != nil {
+		log.Fatalf("error initializing tracer: %v", err)
+	}
 
 	storage, err := newStorage(ctx, tracer, config)
 	if err != nil {
@@ -79,6 +82,7 @@ func run(ctx context.Context, config Config) {
 		log.Fatalf("failed to register service: %v", err)
 	}
 
+	log.Printf("starting server on %s", config.ServerAddr)
 	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
 		log.Fatalf("failed to listen and serve: %v", err)
 	}

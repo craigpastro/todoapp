@@ -2,7 +2,6 @@
 
 What else to do? I welcome suggestions.
 - Add validators to gRPC
-- Tracing
 - Other storage: dynamodb, ?
 
 ## Run the app
