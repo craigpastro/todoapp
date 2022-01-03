@@ -76,3 +76,7 @@ To delete user 1's post 2:
 ```
 curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
 ```
+
+## Tracing
+
+If you `docker compose up -d`ed then you should have [Jaeger](https://www.jaegertracing.io/) and [Zipkin](https://zipkin.io/) running. You can access Jaeger at http://localhost:16686 and Zipkin at http://localhost:9411.
