@@ -128,7 +128,8 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 	update := expression.
 		Set(expression.Name("Data"), expression.Value(data)).
 		Set(expression.Name("UpdatedAt"), expression.Value(now))
-	expr, err := expression.NewBuilder().WithUpdate(update).Build()
+	condition := expression.AttributeExists(expression.Name("UserID")).And(expression.AttributeExists(expression.Name("PostID")))
+	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(condition).Build()
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error building expression: %v", err)
 	}
@@ -139,7 +140,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 		UpdateExpression:          expr.Update(),
-		ConditionExpression:       aws.String("attribute_exists(UserID) AND attribute_exists(PostID)"),
+		ConditionExpression:       expr.Condition(),
 	}
 	_, err = d.client.UpdateItemWithContext(ctx, input)
 	if err != nil {
