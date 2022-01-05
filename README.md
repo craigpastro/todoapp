@@ -1,8 +1,9 @@
 # A simple CRUD app
 
 What else to do? I welcome suggestions.
+- Log errors properly
 - Add validators to gRPC
-- Other storage: dynamodb, ?
+- Add pagination to read all
 
 ## Run the app
 
@@ -18,15 +19,19 @@ You may need the appropriate storage running. If you want to use a container for
 ```
 docker compose up STORAGE_TYPE -d
 ```
-If you are going to run `postgres` the tables will need to be created first; you can `make create-postgres-table` for this purpose. You will need to have `psql` installed.
+For `dynamodb` and `postgres` the the tables will need to be created first; you can `create-local-dynamodb-table` or `create-local-postgres-table` respectively for this purpose. You will need to have `psql` and the aws cli installed.
 
-If everything works fine the service should be listening on `127.0.0.1:8080`.
+If everything works properly the service should be listening on `127.0.0.1:8080`.
 
 ## Tests
 
 You will need all the storage options running. You can use:
 ```
 docker compose up -d
+```
+You may need to create tables in DynamoDB and Postgres for which you can respectively use:
+```
+make create-all-local-tables
 ```
 Then
 ```

@@ -10,6 +10,7 @@ import (
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/storage/dynamodb"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
@@ -30,7 +31,10 @@ type Config struct {
 	ServerAddr  string `split_words:"true" default:"localhost:8080"`
 	StorageType string `split_words:"true" default:"memory"`
 
-	MongoDBURI string `split_words:"true" default:"mongodb://mongodb:password@127.0.0.1:27017"`
+	DynamoDBRegion   string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
+	DynamoDBEndpoint string `envconfig:"DYNAMODB_ENDPOINT" default:"http://localhost:8000"`
+
+	MongoDBURI string `envconfig:"MONGODB_URI" default:"mongodb://mongodb:password@127.0.0.1:27017"`
 
 	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
 
@@ -94,6 +98,8 @@ func run(ctx context.Context, config Config) {
 
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
+	case "dynamodb":
+		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBEndpoint)
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":

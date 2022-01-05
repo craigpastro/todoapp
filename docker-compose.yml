@@ -1,5 +1,10 @@
 version: "3"
 services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    ports:
+      - "8000:8000"
+    
   mongodb:
     image: mongo:4.4.11
     ports:
