@@ -1,9 +1,17 @@
 # A simple CRUD app
 
-What else to do? I welcome suggestions.
+## Help
+
+If anything looks weird or can be better, please help me out! Create an issue or PR.
+
+## Things to do
+
 - Log errors properly
 - Add validators to gRPC
+- Use mTLS for auth (no auth atm)
 - Add pagination to read all
+
+And, of course, I welcome suggestions.
 
 ## Run the app
 

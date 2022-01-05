@@ -65,7 +65,7 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (string, tim
 }
 
 func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
-	_, span := d.tracer.Start(ctx, "dynamodb.Read")
+	ctx, span := d.tracer.Start(ctx, "dynamodb.Read")
 	defer span.End()
 
 	result, err := d.client.GetItemWithContext(ctx, &dynamodb.GetItemInput{
@@ -89,7 +89,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
-	_, span := d.tracer.Start(ctx, "dynamodb.ReadAll")
+	ctx, span := d.tracer.Start(ctx, "dynamodb.ReadAll")
 	defer span.End()
 
 	filt := expression.Name("UserID").Equal(expression.Value(userID))
@@ -154,7 +154,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 }
 
 func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
-	_, span := d.tracer.Start(ctx, "dynamodb.Delete")
+	ctx, span := d.tracer.Start(ctx, "dynamodb.Delete")
 	defer span.End()
 
 	_, err := d.client.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
