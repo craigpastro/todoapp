@@ -11,12 +11,14 @@ var (
 	ErrUndefinedStorageType = errors.New("undefined storage type")
 )
 
+// Record is a storage record.
+// It is tagged with json for storing in Redis and bson for storing in MongoDB.
 type Record struct {
-	UserID    string    `json:"userID"`
-	PostID    string    `json:"postID"`
-	Data      string    `json:"data"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	UserID    string    `json:"userID" bson:"userID"`
+	PostID    string    `json:"postID" bson:"postID"`
+	Data      string    `json:"data" bson:"data"`
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
 }
 
 func NewRecord(userID, postID, data string, createdAt time.Time, updatedAt time.Time) *Record {

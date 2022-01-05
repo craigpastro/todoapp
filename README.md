@@ -9,6 +9,7 @@ What else to do? I welcome suggestions.
 Depending on the storage type you want, run one of the following commands.
 ```
 make run  # defaults to memory
+make run-mongodb
 make run-postgres
 make run-redis
 ```
@@ -23,7 +24,7 @@ If everything works fine the service should be listening on `127.0.0.1:8080`.
 
 ## Tests
 
-You will need Postgres and Redis running. You can use:
+You will need all the storage options running. You can use:
 ```
 docker compose up -d
 ```

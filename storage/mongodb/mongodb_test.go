@@ -1,4 +1,4 @@
-package postgres
+package mongodb
 
 import (
 	"context"
@@ -21,7 +21,7 @@ var (
 )
 
 type Config struct {
-	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
+	MongoDBURI string `split_words:"true" default:"mongodb://mongodb:password@127.0.0.1:27017"`
 }
 
 func TestMain(m *testing.M) {
@@ -35,9 +35,9 @@ func TestMain(m *testing.M) {
 	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
 	var err error
-	db, err = New(ctx, tracer, config.PostgresURI)
+	db, err = New(ctx, tracer, config.MongoDBURI)
 	if err != nil {
-		fmt.Println("error initializing Postgres")
+		fmt.Println("error initializing MongoDB", err)
 		os.Exit(1)
 	}
 
