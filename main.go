@@ -11,6 +11,7 @@ import (
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/memory"
+	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -28,6 +29,8 @@ type Config struct {
 	RPCAddr     string `split_words:"true" default:"localhost:9090"`
 	ServerAddr  string `split_words:"true" default:"localhost:8080"`
 	StorageType string `split_words:"true" default:"memory"`
+
+	MongoDBURI string `split_words:"true" default:"mongodb://mongodb:password@127.0.0.1:27017"`
 
 	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
 
@@ -93,6 +96,8 @@ func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storag
 	switch config.StorageType {
 	case "memory":
 		return memory.New(tracer), nil
+	case "mongodb":
+		return mongodb.New(ctx, tracer, config.MongoDBURI)
 	case "postgres":
 		return postgres.New(ctx, tracer, config.PostgresURI)
 	case "redis":

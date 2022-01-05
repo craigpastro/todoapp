@@ -10,7 +10,6 @@ import (
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -18,7 +17,7 @@ const data = "some data"
 
 var (
 	ctx context.Context
-	db  *Redis
+	db  storage.Storage
 )
 
 type Config struct {
@@ -33,17 +32,14 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	ctx = context.Background()
 	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
-	client := redis.NewClient(&redis.Options{
-		Addr:     config.RedisAddr,
-		Password: config.RedisPassword,
-	})
-
-	ctx = context.Background()
-	db = &Redis{
-		client: client,
-		tracer: tracer,
+	var err error
+	db, err = New(ctx, tracer, config.RedisAddr, config.RedisPassword)
+	if err != nil {
+		fmt.Println("error initializing Redis", err)
+		os.Exit(1)
 	}
 
 	os.Exit(m.Run())
