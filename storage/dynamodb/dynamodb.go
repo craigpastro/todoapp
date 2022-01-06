@@ -53,11 +53,10 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (string, tim
 		return "", time.Time{}, fmt.Errorf("error marshalling: %v", err)
 	}
 
-	_, err = d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
+	if _, err = d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(tableName),
-	})
-	if err != nil {
+	}); err != nil {
 		return "", time.Time{}, fmt.Errorf("error creating: %v", err)
 	}
 
@@ -80,8 +79,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 	}
 
 	var record storage.Record
-	err = dynamodbattribute.UnmarshalMap(result.Item, &record)
-	if err != nil {
+	if err = dynamodbattribute.UnmarshalMap(result.Item, &record); err != nil {
 		return nil, fmt.Errorf("error unmarshaling, %v", err)
 	}
 
@@ -110,8 +108,7 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	res := []*storage.Record{}
 	for _, row := range rows.Items {
 		var record storage.Record
-		err = dynamodbattribute.UnmarshalMap(row, &record)
-		if err != nil {
+		if err = dynamodbattribute.UnmarshalMap(row, &record); err != nil {
 			return nil, fmt.Errorf("error unmarshaling, %v", err)
 		}
 		res = append(res, &record)
@@ -142,8 +139,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 		UpdateExpression:          expr.Update(),
 		ConditionExpression:       expr.Condition(),
 	}
-	_, err = d.client.UpdateItemWithContext(ctx, input)
-	if err != nil {
+	if _, err = d.client.UpdateItemWithContext(ctx, input); err != nil {
 		if t, ok := err.(awserr.Error); ok && t.Code() == "ConditionalCheckFailedException" {
 			return time.Time{}, storage.ErrPostDoesNotExist
 		}
@@ -158,11 +154,10 @@ func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
 	ctx, span := d.tracer.Start(ctx, "dynamodb.Delete")
 	defer span.End()
 
-	_, err := d.client.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
+	if _, err := d.client.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(tableName),
 		Key:       createKey(userID, postID),
-	})
-	if err != nil {
+	}); err != nil {
 		return fmt.Errorf("error deleting, %v", err)
 	}
 
