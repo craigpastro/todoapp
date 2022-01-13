@@ -24,12 +24,9 @@ type DynamoDB struct {
 }
 
 func New(ctx context.Context, tracer trace.Tracer, region, endpoint string) (storage.Storage, error) {
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config: aws.Config{
-			Region:   aws.String(region),
-			Endpoint: aws.String(endpoint),
-		},
-		SharedConfigState: session.SharedConfigEnable,
+	sess, err := session.NewSession(&aws.Config{
+		Region:   aws.String(region),
+		Endpoint: aws.String(endpoint),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize session: %w", err)
