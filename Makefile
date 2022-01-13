@@ -8,6 +8,7 @@ create-local-dynamodb-table:
 			AttributeName=UserID,KeyType=HASH \
 			AttributeName=PostID,KeyType=RANGE \
 		--billing-mode PAY_PER_REQUEST \
+		--region us-west-2
 		--endpoint-url http://localhost:8000
 		
 create-local-postgres-table:
