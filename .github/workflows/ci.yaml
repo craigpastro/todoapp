@@ -10,7 +10,7 @@ on:
 
 jobs:
   fmt:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -19,7 +19,7 @@ jobs:
       - run: gofmt -l
 
   vet:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-go@v2
@@ -27,8 +27,16 @@ jobs:
           go-version: '1.17.x'
       - run: go vet
   
+  validate-swagger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: char0n/swagger-editor-validate@v1
+        with:
+          definition-file: protos/api/v1/service.swagger.json
+
   test:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     services:
       dynamodb:
         image: amazon/dynamodb-local
