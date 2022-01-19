@@ -7,9 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
@@ -35,15 +32,10 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	err := createTable(config)
-	if err != nil {
-		fmt.Println("error creating DynamoDB table", err)
-		os.Exit(1)
-	}
-
 	ctx = context.Background()
 	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
+	var err error
 	db, err = New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBEndpoint)
 	if err != nil {
 		fmt.Println("error initializing DynamoDB", err)
@@ -51,52 +43,6 @@ func TestMain(m *testing.M) {
 	}
 
 	os.Exit(m.Run())
-}
-
-func createTable(config Config) error {
-	tableName := "Posts"
-
-	sess, err := session.NewSession(&aws.Config{
-		Region:   aws.String(config.DynamoDBRegion),
-		Endpoint: aws.String(config.DynamoDBEndpoint),
-	})
-	if err != nil {
-		return fmt.Errorf("unable to initialize session: %w", err)
-	}
-
-	client := dynamodb.New(sess)
-
-	input := &dynamodb.CreateTableInput{
-		TableName:   aws.String(tableName),
-		BillingMode: aws.String("PAY_PER_REQUEST"),
-		AttributeDefinitions: []*dynamodb.AttributeDefinition{
-			{
-				AttributeName: aws.String("UserID"),
-				AttributeType: aws.String("S"),
-			},
-			{
-				AttributeName: aws.String("PostID"),
-				AttributeType: aws.String("S"),
-			},
-		},
-		KeySchema: []*dynamodb.KeySchemaElement{
-			{
-				AttributeName: aws.String("UserID"),
-				KeyType:       aws.String("HASH"),
-			},
-			{
-				AttributeName: aws.String("PostID"),
-				KeyType:       aws.String("RANGE"),
-			},
-		},
-	}
-
-	_, err = client.CreateTable(input)
-	if err != nil {
-		return fmt.Errorf("error creating table: %w", err)
-	}
-
-	return nil
 }
 
 func TestRead(t *testing.T) {

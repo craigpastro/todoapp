@@ -9,7 +9,7 @@ create-local-dynamodb-table:
 			AttributeName=PostID,KeyType=RANGE \
 		--billing-mode PAY_PER_REQUEST \
 		--endpoint-url http://localhost:8000
-
+		
 create-local-postgres-table:
 	psql postgres://postgres:password@localhost:5432/postgres -c 'CREATE TABLE IF NOT EXISTS post (user_id TEXT NOT NULL, post_id TEXT NOT NULL, data TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, PRIMARY KEY (user_id, post_id));'
 
