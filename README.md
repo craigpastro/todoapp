@@ -18,6 +18,7 @@ And, of course, I welcome suggestions.
 Depending on the storage type you want, run one of the following commands.
 ```
 make run  # defaults to memory
+make run-dynamodb
 make run-mongodb
 make run-postgres
 make run-redis
