@@ -36,7 +36,7 @@ build: build-protos
 run: build
 	./bin/crudapp
 
-run-dynamodbdb: build
+run-dynamodb: build
 	STORAGE_TYPE=dynamodb ./bin/crudapp
 
 run-mongodb: build
