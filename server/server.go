@@ -128,5 +128,6 @@ func handleStorageError(err error) error {
 	if errors.Is(err, storage.ErrPostDoesNotExist) {
 		return status.Error(codes.InvalidArgument, "Post does not exist")
 	}
+
 	return status.Error(codes.Internal, "Internal server error")
 }

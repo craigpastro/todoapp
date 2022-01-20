@@ -1,5 +1,10 @@
 version: "3"
 services:
+  dynamodb:
+    image: amazon/dynamodb-local
+    ports:
+      - "8000:8000"
+    
   mongodb:
     image: mongo:4.4.11
     ports:
@@ -23,7 +28,7 @@ services:
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
-    command: ["--config=/etc/otel-local-config.yml"]
+    command: ["--config=/etc/otel-local-config.yaml"]
     ports:
       - "1888:1888"    # pprof extension
       - "8888:8888"    # Prometheus metrics exposed by the collector
@@ -32,7 +37,7 @@ services:
       - "55679:55679"  # zpages extension
       - "4317:4317"
     volumes:
-      - "${PWD}/otel-config.yml:/etc/otel-local-config.yml"
+      - "${PWD}/instrumentation/otel-config.yaml:/etc/otel-local-config.yaml"
     depends_on:
       - zipkin
       - jaeger

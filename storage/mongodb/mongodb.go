@@ -15,6 +15,13 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+const (
+	userIDField    = "userID"
+	postIDField    = "postID"
+	dataField      = "data"
+	updatedAtField = "updatedAt"
+)
+
 type MongoDB struct {
 	coll   *mongo.Collection
 	tracer trace.Tracer
@@ -59,7 +66,7 @@ func (m *MongoDB) Read(ctx context.Context, userID, postID string) (*storage.Rec
 	defer span.End()
 
 	var record storage.Record
-	err := m.coll.FindOne(ctx, bson.M{"userID": userID, "postID": postID}).Decode(&record)
+	err := m.coll.FindOne(ctx, bson.M{userIDField: userID, postIDField: postID}).Decode(&record)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, storage.ErrPostDoesNotExist
@@ -74,7 +81,7 @@ func (m *MongoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record
 	ctx, span := m.tracer.Start(ctx, "mongodb.ReadAll")
 	defer span.End()
 
-	cur, err := m.coll.Find(ctx, bson.M{"userID": userID})
+	cur, err := m.coll.Find(ctx, bson.M{userIDField: userID})
 	if err != nil {
 		return nil, fmt.Errorf("error reading all: %w", err)
 	}
@@ -94,8 +101,8 @@ func (m *MongoDB) Update(ctx context.Context, userID, postID, data string) (time
 	defer span.End()
 
 	now := time.Now()
-	query := bson.M{"userID": userID, "postID": postID}
-	update := bson.M{"$set": bson.M{"data": data, "updatedAt": now}}
+	query := bson.M{userIDField: userID, postIDField: postID}
+	update := bson.M{"$set": bson.M{dataField: data, updatedAtField: now}}
 	res, err := m.coll.UpdateOne(ctx, query, update, options.Update().SetUpsert(false))
 	if res.MatchedCount == 0 {
 		return time.Time{}, storage.ErrPostDoesNotExist
@@ -111,10 +118,10 @@ func (m *MongoDB) Delete(ctx context.Context, userID, postID string) error {
 	ctx, span := m.tracer.Start(ctx, "mongodb.Delete")
 	defer span.End()
 
-	query := bson.M{"userID": userID, "postID": postID}
+	query := bson.M{userIDField: userID, postIDField: postID}
 	_, err := m.coll.DeleteOne(ctx, query)
 	if err != nil {
-		return fmt.Errorf("error reading: %w", err)
+		return fmt.Errorf("error deleting: %w", err)
 	}
 
 	return nil

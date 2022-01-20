@@ -14,11 +14,11 @@ var (
 // Record is a storage record.
 // It is tagged with json for storing in Redis and bson for storing in MongoDB.
 type Record struct {
-	UserID    string    `json:"userID" bson:"userID"`
-	PostID    string    `json:"postID" bson:"postID"`
-	Data      string    `json:"data" bson:"data"`
-	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+	UserID    string    `json:"userID" bson:"userID" dynamodbav:"UserID"`
+	PostID    string    `json:"postID" bson:"postID" dynamodbav:"PostID"`
+	Data      string    `json:"data" bson:"data" dynamodbav:"Data"`
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt" dynamodbav:"CreatedAt"`
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt" dynamodbav:"UpdatedAt"`
 }
 
 func NewRecord(userID, postID, data string, createdAt time.Time, updatedAt time.Time) *Record {
