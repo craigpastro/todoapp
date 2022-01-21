@@ -31,8 +31,8 @@ type Config struct {
 	ServerAddr  string `split_words:"true" default:"localhost:8080"`
 	StorageType string `split_words:"true" default:"memory"`
 
-	DynamoDBRegion   string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
-	DynamoDBEndpoint string `envconfig:"DYNAMODB_ENDPOINT" default:"http://localhost:8000"`
+	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
+	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"false"`
 
 	MongoDBURI string `envconfig:"MONGODB_URI" default:"mongodb://mongodb:password@127.0.0.1:27017"`
 
@@ -99,7 +99,7 @@ func run(ctx context.Context, config Config) {
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "dynamodb":
-		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBEndpoint)
+		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":

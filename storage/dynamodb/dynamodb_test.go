@@ -21,8 +21,8 @@ var (
 )
 
 type Config struct {
-	DynamoDBRegion   string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
-	DynamoDBEndpoint string `envconfig:"DYNAMODB_ENDPOINT" default:"http://localhost:8000"`
+	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
+	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"true"`
 }
 
 func TestMain(m *testing.M) {
@@ -36,7 +36,7 @@ func TestMain(m *testing.M) {
 	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 
 	var err error
-	db, err = New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBEndpoint)
+	db, err = New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
 	if err != nil {
 		fmt.Println("error initializing DynamoDB", err)
 		os.Exit(1)

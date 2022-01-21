@@ -23,10 +23,14 @@ type DynamoDB struct {
 	tracer trace.Tracer
 }
 
-func New(ctx context.Context, tracer trace.Tracer, region, endpoint string) (storage.Storage, error) {
-	sess, err := session.NewSession(&aws.Config{
-		Region:   aws.String(region),
-		Endpoint: aws.String(endpoint),
+func New(ctx context.Context, tracer trace.Tracer, region string, local bool) (storage.Storage, error) {
+	config := aws.Config{Region: aws.String(region)}
+	if local {
+		config.Endpoint = aws.String("http://localhost:8000")
+	}
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config:            config,
+		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize session: %w", err)
