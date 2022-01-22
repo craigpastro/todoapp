@@ -39,6 +39,9 @@ run: build
 run-dynamodb: build
 	STORAGE_TYPE=dynamodb ./bin/crudapp
 
+run-local-dynamodb:
+	DYNAMODB_LOCAL=true make run-dynamodb
+
 run-mongodb: build
 	STORAGE_TYPE=mongodb ./bin/crudapp
 

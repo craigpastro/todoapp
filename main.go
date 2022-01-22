@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -15,6 +15,8 @@ import (
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
 	"go.opentelemetry.io/otel/trace"
@@ -48,7 +50,7 @@ type Config struct {
 func main() {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		log.Fatal("error reading config", err)
+		panic(fmt.Sprintf("error reading config: %v", err))
 	}
 
 	ctx := context.Background()
@@ -59,6 +61,15 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) {
+	logger, err := instrumentation.NewLogger(instrumentation.LoggerConfig{
+		ServiceName:    config.ServiceName,
+		ServiceVersion: config.ServiceVersion,
+		Environment:    config.Environment,
+	})
+	if err != nil {
+		panic(fmt.Sprintf("error initializing logger: %v", err))
+	}
+
 	tracer, err := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{
 		Enabled:        config.TraceProviderEnabled,
 		ServiceName:    config.ServiceName,
@@ -67,32 +78,39 @@ func run(ctx context.Context, config Config) {
 		Endpoint:       config.TraceProviderURL,
 	})
 	if err != nil {
-		log.Fatalf("error initializing tracer: %v", err)
+		logger.Fatal("error initializing tracer", instrumentation.Error(err))
 	}
 
 	storage, err := newStorage(ctx, tracer, config)
 	if err != nil {
-		log.Fatalf("error initializing storage: %v", err)
+		logger.Fatal("error initializing storage", instrumentation.Error(err))
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			grpc_zap.StreamServerInterceptor(logger),
+		)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			grpc_zap.UnaryServerInterceptor(logger),
+		)),
+	)
 	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
 
 	lis, err := net.Listen("tcp", config.RPCAddr)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal("failed to listen", instrumentation.Error(err))
 	}
 	go s.Serve(lis)
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	if err := pb.RegisterServiceHandlerFromEndpoint(ctx, mux, config.RPCAddr, opts); err != nil {
-		log.Fatalf("failed to register service: %v", err)
+		logger.Fatal("failed to register service", instrumentation.Error(err))
 	}
 
-	log.Printf("starting server on %s", config.ServerAddr)
+	logger.Info(fmt.Sprintf("server starting on %s", config.ServerAddr))
 	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
-		log.Fatalf("failed to listen and serve: %v", err)
+		logger.Fatal("failed to listen and serve", instrumentation.Error(err))
 	}
 }
 
