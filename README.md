@@ -6,8 +6,7 @@ If anything looks weird or can be better, please help me out! Create an issue or
 
 ## Things to do
 
-- Log errors properly
-- Add validators to gRPC. Or perhaps switch to [Twirp](https://github.com/twitchtv/twirp).
+- Add validators to gRPC. Or perhaps switch to [Twirp](https://github.com/twitchtv/twirp) and find out what they do there.
 - Use mTLS for auth (no auth atm)
 - Add pagination to read all
 
