@@ -6,6 +6,7 @@ require (
 	github.com/aws/aws-sdk-go v1.42.27
 	github.com/envoyproxy/protoc-gen-validate v0.6.3
 	github.com/go-redis/redis/v8 v8.11.4
+	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.2
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -53,6 +54,9 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20181117223130-1be2e3e5546d // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.3.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.11.0 // indirect
+	go.uber.org/atomic v1.6.0 // indirect
+	go.uber.org/multierr v1.5.0 // indirect
+	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.5.0 // indirect
