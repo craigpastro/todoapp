@@ -3,7 +3,7 @@ module github.com/craigpastro/crudapp
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.42.27
+	github.com/aws/aws-sdk-go v1.42.39
 	github.com/envoyproxy/protoc-gen-validate v0.6.3
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -17,6 +17,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.3.0
 	go.opentelemetry.io/otel/sdk v1.3.0
 	go.opentelemetry.io/otel/trace v1.3.0
+	go.uber.org/zap v1.13.0
 	google.golang.org/genproto v0.0.0-20211223182754-3ac035c7e7cb
 	google.golang.org/grpc v1.43.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
@@ -56,7 +57,6 @@ require (
 	go.opentelemetry.io/proto/otlp v0.11.0 // indirect
 	go.uber.org/atomic v1.6.0 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
-	go.uber.org/zap v1.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20210711020723-a769d52b0f97 // indirect
 	golang.org/x/lint v0.0.0-20210508222113-6edffad5e616 // indirect
 	golang.org/x/mod v0.5.0 // indirect
