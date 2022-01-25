@@ -91,16 +91,16 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	ctx, span := d.tracer.Start(ctx, "dynamodb.ReadAll")
 	defer span.End()
 
-	filt := expression.Name("UserID").Equal(expression.Value(userID))
-	expr, err := expression.NewBuilder().WithFilter(filt).Build()
+	keyCond := expression.Key("UserID").Equal(expression.Value(userID))
+	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
 	if err != nil {
 		return nil, fmt.Errorf("error building expression: %v", err)
 	}
-	rows, err := d.client.ScanWithContext(ctx, &dynamodb.ScanInput{
+	rows, err := d.client.QueryWithContext(ctx, &dynamodb.QueryInput{
+		TableName:                 aws.String(tableName),
+		KeyConditionExpression:    expr.KeyCondition(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
-		TableName:                 aws.String(tableName),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error reading all: %v", err)
