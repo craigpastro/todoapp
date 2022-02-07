@@ -3,7 +3,7 @@ module github.com/craigpastro/crudapp
 go 1.17
 
 require (
-	github.com/aws/aws-sdk-go v1.42.44
+	github.com/aws/aws-sdk-go v1.42.47
 	github.com/envoyproxy/protoc-gen-validate v0.6.3
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
