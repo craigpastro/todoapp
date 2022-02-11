@@ -48,8 +48,7 @@ func TestRead(t *testing.T) {
 
 func TestReadNotExists(t *testing.T) {
 	userID := myid.New()
-	_, err := db.Read(ctx, userID, "1")
-	if err != storage.ErrPostDoesNotExist {
+	if _, err := db.Read(ctx, userID, "1"); err != storage.ErrPostDoesNotExist {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }
@@ -83,8 +82,7 @@ func TestUpdate(t *testing.T) {
 
 func TestUpdateNotExists(t *testing.T) {
 	userID := myid.New()
-	_, err := db.Update(ctx, userID, "1", "new data")
-	if err != storage.ErrPostDoesNotExist {
+	if _, err := db.Update(ctx, userID, "1", "new data"); err != storage.ErrPostDoesNotExist {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }
@@ -92,10 +90,22 @@ func TestUpdateNotExists(t *testing.T) {
 func TestDelete(t *testing.T) {
 	userID := myid.New()
 	postID, _, _ := db.Create(ctx, userID, data)
-	db.Delete(ctx, userID, postID)
-	_, err := db.Read(ctx, userID, postID)
 
-	if !errors.Is(err, storage.ErrPostDoesNotExist) {
+	if err := db.Delete(ctx, userID, postID); err != nil {
+		t.Errorf("error not nil: %v", err)
+	}
+
+	// Now try to read the deleted record; it should not exist.
+	if _, err := db.Read(ctx, userID, postID); !errors.Is(err, storage.ErrPostDoesNotExist) {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
+	}
+}
+
+func TestDeleteNotExists(t *testing.T) {
+	userID := myid.New()
+	postID := myid.New()
+
+	if err := db.Delete(ctx, userID, postID); err != nil {
+		t.Errorf("error not nil: %v", err)
 	}
 }
