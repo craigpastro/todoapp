@@ -159,6 +159,23 @@ func TestDelete(t *testing.T) {
 	}
 }
 
+func TestDeleteNotExists(t *testing.T) {
+	ctx := context.Background()
+	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
+	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
+	if err != nil {
+		t.Fatalf("failed to dial bufnet: %v", err)
+	}
+	defer conn.Close()
+	client := pb.NewServiceClient(conn)
+
+	userID := myid.New()
+	postID := myid.New()
+	if _, err := client.Delete(ctx, &pb.DeleteRequest{UserId: userID, PostId: postID}); err != nil {
+		t.Errorf("error not nil: %v", err)
+	}
+}
+
 func bufDialer(context.Context, string) (net.Conn, error) {
 	return lis.Dial()
 }
