@@ -15,7 +15,7 @@ create-local-postgres-table:
 
 create-all-local-tables: create-local-postgres-table create-local-dynamodb-table
 
-test:
+test: build-protos
 	go test ./...
 
 build-protos:
