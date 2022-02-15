@@ -29,8 +29,10 @@ jobs:
         uses: arduino/setup-protoc@v1
       - name: Install protoc-gen-go
         run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
       - run: make build-protos
       - run: go vet
   
@@ -90,8 +92,10 @@ jobs:
         uses: arduino/setup-protoc@v1
       - name: Install protoc-gen-go
         run: |
-          go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+          go install google.golang.org/protobuf/cmd/protoc-gen-go
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
+          go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
