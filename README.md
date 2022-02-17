@@ -37,7 +37,7 @@ You will need all the storage options running. You can use:
 ```
 docker compose up -d
 ```
-You may need to create tables in DynamoDB and Postgres for which you can respectively use:
+You may need to create tables in DynamoDB and Postgres for which you can use:
 ```
 make create-all-local-tables
 ```

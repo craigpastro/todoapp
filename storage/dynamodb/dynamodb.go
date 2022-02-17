@@ -54,7 +54,7 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (string, tim
 		return "", time.Time{}, fmt.Errorf("error marshalling: %v", err)
 	}
 
-	if _, err = d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
+	if _, err := d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(tableName),
 	}); err != nil {
@@ -80,7 +80,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 	}
 
 	var record storage.Record
-	if err = dynamodbattribute.UnmarshalMap(result.Item, &record); err != nil {
+	if err := dynamodbattribute.UnmarshalMap(result.Item, &record); err != nil {
 		return nil, fmt.Errorf("error unmarshaling, %v", err)
 	}
 
@@ -106,10 +106,10 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 		return nil, fmt.Errorf("error reading all: %v", err)
 	}
 
-	res := []*storage.Record{}
+	var res []*storage.Record
 	for _, row := range rows.Items {
 		var record storage.Record
-		if err = dynamodbattribute.UnmarshalMap(row, &record); err != nil {
+		if err := dynamodbattribute.UnmarshalMap(row, &record); err != nil {
 			return nil, fmt.Errorf("error unmarshaling, %v", err)
 		}
 		res = append(res, &record)
@@ -140,7 +140,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 		UpdateExpression:          expr.Update(),
 		ConditionExpression:       expr.Condition(),
 	}
-	if _, err = d.client.UpdateItemWithContext(ctx, input); err != nil {
+	if _, err := d.client.UpdateItemWithContext(ctx, input); err != nil {
 		if t, ok := err.(awserr.Error); ok && t.Code() == "ConditionalCheckFailedException" {
 			return time.Time{}, storage.ErrPostDoesNotExist
 		}
