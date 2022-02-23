@@ -96,7 +96,7 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	if err != nil {
 		return nil, fmt.Errorf("error building expression: %v", err)
 	}
-	rows, err := d.client.QueryWithContext(ctx, &dynamodb.QueryInput{
+	result, err := d.client.QueryWithContext(ctx, &dynamodb.QueryInput{
 		TableName:                 aws.String(tableName),
 		KeyConditionExpression:    expr.KeyCondition(),
 		ExpressionAttributeNames:  expr.Names(),
@@ -107,12 +107,8 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	}
 
 	var res []*storage.Record
-	for _, row := range rows.Items {
-		var record storage.Record
-		if err := dynamodbattribute.UnmarshalMap(row, &record); err != nil {
-			return nil, fmt.Errorf("error unmarshaling, %v", err)
-		}
-		res = append(res, &record)
+	if err := dynamodbattribute.UnmarshalListOfMaps(result.Items, &res); err != nil {
+		return nil, fmt.Errorf("error unmarshaling, %v", err)
 	}
 
 	return res, nil
