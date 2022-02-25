@@ -27,25 +27,21 @@ You may need the appropriate storage running. If you want to use a container for
 ```
 docker compose up STORAGE_TYPE -d
 ```
-For `dynamodb` and `postgres` the the tables will need to be created first; you can `create-local-dynamodb-table` or `create-local-postgres-table` respectively for this purpose. You will need to have `psql` and the aws cli installed.
+For `dynamodb` and `postgres` the the tables will need to be created first; you can `create-local-dynamodb-table` or `create-local-postgres-table` respectively for this purpose. You will need to have `psql` or the aws cli installed.
 
 If everything works properly the service should be listening on `127.0.0.1:8080`.
 
 ## Tests
 
-You will need all the storage options running. You can use:
+Use
 ```
 docker compose up -d
 ```
-You may need to create tables in DynamoDB and Postgres for which you can use:
-```
-make create-all-local-tables
-```
-Then
+to get all the required services running. Then
 ```
 make test
 ```
-If you want to bring the containers down:
+Don't forget to
 ```
 docker compose down
 ```
