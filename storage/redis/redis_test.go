@@ -10,6 +10,7 @@ import (
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -28,18 +29,25 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Println("error reading config", err)
+		fmt.Printf("error reading config: %v\n", err)
 		os.Exit(1)
 	}
 
 	ctx = context.Background()
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
+	client := redis.NewClient(&redis.Options{
+		Addr:     config.RedisAddr,
+		Password: config.RedisPassword,
+	})
 
-	var err error
-	db, err = New(ctx, tracer, config.RedisAddr, config.RedisPassword)
-	if err != nil {
-		fmt.Println("error initializing Redis", err)
+	if _, err := client.Ping(ctx).Result(); err != nil {
+		fmt.Printf("error connecting to Redis: %v\n", err)
 		os.Exit(1)
+	}
+
+	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
+	db = &Redis{
+		client: client,
+		tracer: tracer,
 	}
 
 	os.Exit(m.Run())
