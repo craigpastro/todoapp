@@ -52,39 +52,59 @@ docker compose down
 
 To create a new post for user 1:
 ```
-curl -XPOST -i 127.0.0.1:8080/v1/users/1/posts \
+make USER_ID=1 DATA='update my great post' create
+```
+which just calls
+```
+curl -XPOST -i 127.0.0.1:8080/v1/users/${USER_ID}/posts \
   -H 'Content-Type: application/json' \
-  -d '{"data": "a great post"}'
+  -d '{"data": "${DATA}"}'
 ```
 
 ### Read
 
 To get user 1's post 2: 
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/1/posts/2
+make USER_ID=1 POST_ID=2 read
+```
+which just calls
+```
+curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
 ```
 
 ### ReadAll
 
 To get all user 1's posts:
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/1/posts
+make USER_ID=1 read-all
+```
+which just calls
+```
+curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts
 ```
 
 ### Update
 
 To update user 1's post 2: 
 ```
-curl -XPATCH -i 127.0.0.1:8080/v1/users/1/posts/2 \
-  -H 'Content-Type: application/json' \
-  -d '{"data": "update my great post"}'
+make USER_ID=1 POST_ID=2 DATA='update my great post' update
+```
+which just calls
+```
+curl -XPATCH -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID} \
+	-H 'Content-Type: application/json' \
+	-d '{"data": "${DATA}"}'
 ```
 
 ### Delete
 
 To delete user 1's post 2: 
 ```
-curl -XDELETE -i 127.0.0.1:8080/v1/users/1/posts/2
+make USER_ID=1 POST_ID=2 delete
+```
+which just calls
+```
+curl -XDELETE -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
 ```
 
 ## Tracing
