@@ -36,8 +36,7 @@ func (p *Postgres) Create(ctx context.Context, userID, data string) (string, tim
 
 	postID := myid.New()
 	now := time.Now()
-	_, err := p.pool.Exec(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now)
-	if err != nil {
+	if _, err := p.pool.Exec(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now); err != nil {
 		return "", time.Time{}, fmt.Errorf("error creating: %w", err)
 	}
 
@@ -49,15 +48,14 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 	defer span.End()
 
 	row := p.pool.QueryRow(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1 AND post_id = $2", userID, postID)
-	record := &storage.Record{}
-	err := row.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt)
-	if errors.Is(err, pgx.ErrNoRows) {
+	var record storage.Record
+	if err := row.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt); errors.Is(err, pgx.ErrNoRows) {
 		return nil, storage.ErrPostDoesNotExist
 	} else if err != nil {
 		return nil, fmt.Errorf("error reading: %w", err)
 	}
 
-	return record, nil
+	return &record, nil
 }
 
 func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
@@ -69,11 +67,11 @@ func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 		return nil, fmt.Errorf("error reading all: %w", err)
 	}
 
-	res := []*storage.Record{}
+	var res []*storage.Record
 	for rows.Next() {
-		record := &storage.Record{}
+		var record storage.Record
 		rows.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt)
-		res = append(res, record)
+		res = append(res, &record)
 	}
 
 	return res, nil
@@ -83,8 +81,7 @@ func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (tim
 	ctx, span := p.tracer.Start(ctx, "postgres.Update")
 	defer span.End()
 
-	_, err := p.Read(ctx, userID, postID)
-	if errors.Is(err, storage.ErrPostDoesNotExist) {
+	if _, err := p.Read(ctx, userID, postID); errors.Is(err, storage.ErrPostDoesNotExist) {
 		return time.Time{}, err
 	} else if err != nil {
 		return time.Time{}, fmt.Errorf("error updating: %w", err)
