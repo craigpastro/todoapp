@@ -24,8 +24,7 @@ func New(ctx context.Context, tracer trace.Tracer, addr, password string) (stora
 		Password: password,
 	})
 
-	_, err := client.Ping(ctx).Result()
-	if err != nil {
+	if _, err := client.Ping(ctx).Result(); err != nil {
 		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
 	}
 

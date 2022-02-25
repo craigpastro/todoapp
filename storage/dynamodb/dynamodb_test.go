@@ -7,6 +7,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
@@ -28,18 +31,58 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Println("error reading config", err)
+		fmt.Printf("error reading config: %v\n", err)
 		os.Exit(1)
 	}
 
 	ctx = context.Background()
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
-
-	var err error
-	db, err = New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
+	c := aws.Config{Region: aws.String(config.DynamoDBRegion)}
+	if config.DynamoDBLocal {
+		c.Endpoint = aws.String("http://localhost:8000")
+	}
+	sess, err := session.NewSessionWithOptions(session.Options{
+		Config:            c,
+		SharedConfigState: session.SharedConfigEnable,
+	})
 	if err != nil {
-		fmt.Println("error initializing DynamoDB", err)
+		fmt.Printf("error initializing DynamoDB: %v\n", err)
 		os.Exit(1)
+	}
+
+	client := dynamodb.New(sess)
+	input := &dynamodb.CreateTableInput{
+		TableName: aws.String(tableName),
+		AttributeDefinitions: []*dynamodb.AttributeDefinition{
+			{
+				AttributeName: aws.String(userIDAttribute),
+				AttributeType: aws.String("S"),
+			},
+			{
+				AttributeName: aws.String(postIDAttribute),
+				AttributeType: aws.String("S"),
+			},
+		},
+		KeySchema: []*dynamodb.KeySchemaElement{
+			{
+				AttributeName: aws.String(userIDAttribute),
+				KeyType:       aws.String("HASH"),
+			},
+			{
+				AttributeName: aws.String(postIDAttribute),
+				KeyType:       aws.String("RANGE"),
+			},
+		},
+		BillingMode: aws.String("PAY_PER_REQUEST"),
+	}
+	if _, err := client.CreateTableWithContext(ctx, input); err != nil {
+		fmt.Printf("error creating table: %v\n", err)
+		os.Exit(1)
+	}
+
+	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
+	db = &DynamoDB{
+		client: dynamodb.New(sess),
+		tracer: tracer,
 	}
 
 	os.Exit(m.Run())

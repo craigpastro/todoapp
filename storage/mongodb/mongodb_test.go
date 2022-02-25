@@ -11,6 +11,9 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/kelseyhightower/envconfig"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 const data = "some data"
@@ -27,18 +30,25 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Println("error reading config", err)
+		fmt.Printf("error reading config: %v\n", err)
 		os.Exit(1)
 	}
 
 	ctx = context.Background()
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
-
-	var err error
-	db, err = New(ctx, tracer, config.MongoDBURI)
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.MongoDBURI))
 	if err != nil {
-		fmt.Println("error initializing MongoDB", err)
+		fmt.Printf("error initializing MongoDB: %v\n", err)
 		os.Exit(1)
+	}
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		fmt.Printf("error connecting to MongoDB: %v\n", err)
+		os.Exit(1)
+	}
+
+	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
+	db = &MongoDB{
+		coll:   client.Database("db").Collection("posts"),
+		tracer: tracer,
 	}
 
 	os.Exit(m.Run())

@@ -16,7 +16,11 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const tableName = "Posts"
+const (
+	tableName       = "Posts"
+	userIDAttribute = "UserID"
+	postIDAttribute = "PostID"
+)
 
 type DynamoDB struct {
 	client *dynamodb.DynamoDB
@@ -91,7 +95,7 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	ctx, span := d.tracer.Start(ctx, "dynamodb.ReadAll")
 	defer span.End()
 
-	keyCond := expression.Key("UserID").Equal(expression.Value(userID))
+	keyCond := expression.Key(userIDAttribute).Equal(expression.Value(userID))
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
 	if err != nil {
 		return nil, fmt.Errorf("error building expression: %v", err)
@@ -122,7 +126,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 	update := expression.
 		Set(expression.Name("Data"), expression.Value(data)).
 		Set(expression.Name("UpdatedAt"), expression.Value(now))
-	condition := expression.AttributeExists(expression.Name("UserID")).And(expression.AttributeExists(expression.Name("PostID")))
+	condition := expression.AttributeExists(expression.Name(userIDAttribute)).And(expression.AttributeExists(expression.Name(postIDAttribute)))
 	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(condition).Build()
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error building expression: %v", err)
@@ -163,10 +167,10 @@ func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
 
 func createKey(userID, postID string) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
-		"UserID": {
+		userIDAttribute: {
 			S: aws.String(userID),
 		},
-		"PostID": {
+		postIDAttribute: {
 			S: aws.String(postID),
 		},
 	}

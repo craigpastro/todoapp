@@ -96,11 +96,6 @@ jobs:
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
           go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
           go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2
-      - uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-west-2
-      - run: make create-all-local-tables && make test
+      - run: make test
         env:
           POSTGRES_URI: postgres://postgres:password@localhost:5432/postgres
