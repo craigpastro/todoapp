@@ -1,7 +1,14 @@
 version: "3"
 services:
+  cockroachdb:
+    image: cockroachdb/cockroach:latest
+    command: start-single-node --insecure
+    ports:
+      - 26257:26257
+      - 18080:8080
+
   dynamodb:
-    image: amazon/dynamodb-local
+    image: amazon/dynamodb-local:latest
     ports:
       - "8000:8000"
     
