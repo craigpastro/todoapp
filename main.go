@@ -19,9 +19,11 @@ import (
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 type Config struct {
@@ -29,8 +31,8 @@ type Config struct {
 	ServiceVersion string `default:"0.1.0"`
 	Environment    string `default:"dev"`
 
-	RPCAddr     string `split_words:"true" default:"localhost:9090"`
-	ServerAddr  string `split_words:"true" default:"localhost:8080"`
+	RPCAddr     string `split_words:"true" default:"127.0.0.1:9090"`
+	ServerAddr  string `split_words:"true" default:"127.0.0.1:8080"`
 	StorageType string `split_words:"true" default:"memory"`
 
 	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
@@ -95,6 +97,7 @@ func run(ctx context.Context, config Config) {
 		)),
 	)
 	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
+	reflection.Register(s)
 
 	lis, err := net.Listen("tcp", config.RPCAddr)
 	if err != nil {
@@ -103,12 +106,16 @@ func run(ctx context.Context, config Config) {
 	go s.Serve(lis)
 
 	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
+	}
 	if err := pb.RegisterServiceHandlerFromEndpoint(ctx, mux, config.RPCAddr, opts); err != nil {
 		logger.Fatal("failed to register service", instrumentation.Error(err))
 	}
 
-	logger.Info(fmt.Sprintf("server starting on %s", config.ServerAddr))
+	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.ServerAddr, config.StorageType))
 	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
 		logger.Fatal("failed to listen and serve", instrumentation.Error(err))
 	}
