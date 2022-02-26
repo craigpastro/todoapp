@@ -10,7 +10,6 @@ import (
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/storage/cockroachdb"
 	"github.com/craigpastro/crudapp/storage/dynamodb"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/mongodb"
@@ -127,7 +126,7 @@ func run(ctx context.Context, config Config) {
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "cockroachdb":
-		return cockroachdb.New(ctx, tracer, config.CockroachDBURI)
+		return postgres.New(ctx, tracer, config.CockroachDBURI)
 	case "dynamodb":
 		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
 	case "memory":

@@ -36,6 +36,9 @@ build: build-protos
 run: build
 	./bin/crudapp
 
+run-cockroachdb: build
+	STORAGE_TYPE=cockroachdb ./bin/crudapp
+
 run-dynamodb: build
 	STORAGE_TYPE=dynamodb ./bin/crudapp
 
