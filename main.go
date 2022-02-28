@@ -35,8 +35,6 @@ type Config struct {
 	ServerAddr  string `split_words:"true" default:"127.0.0.1:8080"`
 	StorageType string `split_words:"true" default:"memory"`
 
-	CockroachDBURI string `envconfig:"COCKROACHDB_URI" default:"postgres://root@127.0.0.1:26257/defaultdb"`
-
 	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
 	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"false"`
 
@@ -125,8 +123,6 @@ func run(ctx context.Context, config Config) {
 
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
-	case "cockroachdb":
-		return postgres.New(ctx, tracer, config.CockroachDBURI)
 	case "dynamodb":
 		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
 	case "memory":
