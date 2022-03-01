@@ -30,17 +30,23 @@ func New(ctx context.Context, tracer trace.Tracer, connectionURI string) (storag
 	}, nil
 }
 
-func (p *Postgres) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	ctx, span := p.tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
 	postID := myid.New()
 	now := time.Now()
 	if _, err := p.pool.Exec(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now); err != nil {
-		return "", time.Time{}, fmt.Errorf("error creating: %w", err)
+		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
-	return postID, now, nil
+	return &storage.Record{
+		UserID:    userID,
+		PostID:    postID,
+		Data:      data,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}, nil
 }
 
 func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {

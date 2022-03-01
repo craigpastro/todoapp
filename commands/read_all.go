@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -13,12 +14,14 @@ import (
 )
 
 type readAllCommand struct {
+	cache   cache.Cache
 	storage storage.Storage
 	tracer  trace.Tracer
 }
 
-func NewReadAllCommand(storage storage.Storage, tracer trace.Tracer) *readAllCommand {
+func NewReadAllCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *readAllCommand {
 	return &readAllCommand{
+		cache:   cache,
 		storage: storage,
 		tracer:  tracer,
 	}

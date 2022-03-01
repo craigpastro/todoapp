@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -13,12 +14,14 @@ import (
 )
 
 type readCommand struct {
+	cache   cache.Cache
 	storage storage.Storage
 	tracer  trace.Tracer
 }
 
-func NewReadCommand(storage storage.Storage, tracer trace.Tracer) *readCommand {
+func NewReadCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *readCommand {
 	return &readCommand{
+		cache:   cache,
 		storage: storage,
 		tracer:  tracer,
 	}
@@ -30,10 +33,15 @@ func (c *readCommand) Execute(ctx context.Context, req *pb.ReadRequest) (*pb.Rea
 	ctx, span := c.tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	record, err := c.storage.Read(ctx, userID, postID)
-	if err != nil {
-		instrumentation.TraceError(span, err)
-		return nil, errors.HandleStorageError(err)
+	var err error
+	record, ok := c.cache.Get(ctx, userID, postID)
+	if !ok {
+		record, err = c.storage.Read(ctx, userID, postID)
+		if err != nil {
+			instrumentation.TraceError(span, err)
+			return nil, errors.HandleStorageError(err)
+		}
+		c.cache.Add(ctx, userID, postID, record)
 	}
 
 	return &pb.ReadResponse{

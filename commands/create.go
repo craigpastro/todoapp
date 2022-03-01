@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -13,12 +14,14 @@ import (
 )
 
 type createCommand struct {
+	cache   cache.Cache
 	storage storage.Storage
 	tracer  trace.Tracer
 }
 
-func NewCreateCommand(storage storage.Storage, tracer trace.Tracer) *createCommand {
+func NewCreateCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *createCommand {
 	return &createCommand{
+		cache:   cache,
 		storage: storage,
 		tracer:  tracer,
 	}
@@ -29,14 +32,14 @@ func (c *createCommand) Execute(ctx context.Context, req *pb.CreateRequest) (*pb
 	ctx, span := c.tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	postID, createdAt, err := c.storage.Create(ctx, userID, req.Data)
+	record, err := c.storage.Create(ctx, userID, req.Data)
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
 	return &pb.CreateResponse{
-		PostId:    postID,
-		CreatedAt: timestamppb.New(createdAt),
+		PostId:    record.PostID,
+		CreatedAt: timestamppb.New(record.CreatedAt),
 	}, nil
 }

@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
@@ -88,6 +89,11 @@ func run(ctx context.Context, config Config) {
 		logger.Fatal("error initializing storage", instrumentation.Error(err))
 	}
 
+	cache, err := cache.NewNoopCache()
+	if err != nil {
+		logger.Fatal("error initializing cache", instrumentation.Error(err))
+	}
+
 	s := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_zap.StreamServerInterceptor(logger),
@@ -96,7 +102,7 @@ func run(ctx context.Context, config Config) {
 			grpc_zap.UnaryServerInterceptor(logger),
 		)),
 	)
-	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
+	pb.RegisterServiceServer(s, server.NewServer(cache, storage, tracer))
 	reflection.Register(s)
 
 	lis, err := net.Listen("tcp", config.RPCAddr)

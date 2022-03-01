@@ -46,7 +46,7 @@ func New(ctx context.Context, tracer trace.Tracer, region string, local bool) (s
 	}, nil
 }
 
-func (d *DynamoDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	ctx, span := d.tracer.Start(ctx, "dynamodb.Create")
 	defer span.End()
 
@@ -55,17 +55,23 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (string, tim
 	record := storage.NewRecord(userID, postID, data, now, now)
 	av, err := dynamodbattribute.MarshalMap(record)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error marshalling: %v", err)
+		return nil, fmt.Errorf("error marshalling: %v", err)
 	}
 
 	if _, err := d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(tableName),
 	}); err != nil {
-		return "", time.Time{}, fmt.Errorf("error creating: %v", err)
+		return nil, fmt.Errorf("error creating: %v", err)
 	}
 
-	return postID, now, nil
+	return &storage.Record{
+		UserID:    userID,
+		PostID:    postID,
+		Data:      data,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}, nil
 }
 
 func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {

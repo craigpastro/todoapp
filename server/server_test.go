@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/myid"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage/memory"
@@ -28,7 +29,8 @@ func TestMain(m *testing.M) {
 	s := grpc.NewServer()
 	tracer := otel.Tracer("noop")
 	storage := memory.New(tracer)
-	pb.RegisterServiceServer(s, NewServer(tracer, storage))
+	cache := cache.NewNoopCache()
+	pb.RegisterServiceServer(s, NewServer(cache, storage, tracer))
 	lis = bufconn.Listen(bufSize)
 	go func() {
 		if err := s.Serve(lis); err != nil {

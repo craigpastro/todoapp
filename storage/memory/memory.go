@@ -21,7 +21,7 @@ func New(tracer trace.Tracer) storage.Storage {
 	}
 }
 
-func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+func (m *MemoryDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	_, span := m.tracer.Start(ctx, "memory.Create")
 	defer span.End()
 
@@ -33,7 +33,13 @@ func (m *MemoryDB) Create(ctx context.Context, userID, data string) (string, tim
 	now := time.Now()
 	m.store[userID][postID] = storage.NewRecord(userID, postID, data, now, now)
 
-	return postID, now, nil
+	return &storage.Record{
+		UserID:    userID,
+		PostID:    postID,
+		Data:      data,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}, nil
 }
 
 func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
