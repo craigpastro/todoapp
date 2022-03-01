@@ -89,10 +89,7 @@ func run(ctx context.Context, config Config) {
 		logger.Fatal("error initializing storage", instrumentation.Error(err))
 	}
 
-	cache, err := cache.NewNoopCache()
-	if err != nil {
-		logger.Fatal("error initializing cache", instrumentation.Error(err))
-	}
+	cache := cache.NewNoopCache()
 
 	s := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
