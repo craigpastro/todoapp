@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -75,8 +76,10 @@ func TestMain(m *testing.M) {
 		BillingMode: aws.String("PAY_PER_REQUEST"),
 	}
 	if _, err := client.CreateTableWithContext(ctx, input); err != nil {
-		fmt.Printf("error creating table: %v\n", err)
-		os.Exit(1)
+		if !strings.Contains(err.Error(), "Cannot create preexisting table") {
+			fmt.Printf("error creating table: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})

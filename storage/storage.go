@@ -7,8 +7,7 @@ import (
 )
 
 var (
-	ErrPostDoesNotExist     = errors.New("post does not exist")
-	ErrUndefinedStorageType = errors.New("undefined storage type")
+	ErrPostDoesNotExist = errors.New("post does not exist")
 )
 
 // Record is a storage record.
