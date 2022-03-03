@@ -31,15 +31,10 @@ func (m *MemoryDB) Create(ctx context.Context, userID, data string) (*storage.Re
 
 	postID := myid.New()
 	now := time.Now()
-	m.store[userID][postID] = storage.NewRecord(userID, postID, data, now, now)
+	record := storage.NewRecord(userID, postID, data, now, now)
+	m.store[userID][postID] = record
 
-	return &storage.Record{
-		UserID:    userID,
-		PostID:    postID,
-		Data:      data,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}, nil
+	return record, nil
 }
 
 func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {

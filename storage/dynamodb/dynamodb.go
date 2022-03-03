@@ -65,13 +65,7 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Re
 		return nil, fmt.Errorf("error creating: %v", err)
 	}
 
-	return &storage.Record{
-		UserID:    userID,
-		PostID:    postID,
-		Data:      data,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}, nil
+	return record, nil
 }
 
 func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {

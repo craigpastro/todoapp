@@ -58,13 +58,7 @@ func (m *MongoDB) Create(ctx context.Context, userID, data string) (*storage.Rec
 		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
-	return &storage.Record{
-		UserID:    userID,
-		PostID:    postID,
-		Data:      data,
-		CreatedAt: now,
-		UpdatedAt: now,
-	}, nil
+	return record, nil
 }
 
 func (m *MongoDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
