@@ -34,23 +34,24 @@ func New(ctx context.Context, tracer trace.Tracer, addr, password string) (stora
 	}, nil
 }
 
-func (r *Redis) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+func (r *Redis) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	ctx, span := r.tracer.Start(ctx, "redis.Create")
 	defer span.End()
 
 	postID := myid.New()
 	now := time.Now()
-	record, err := json.Marshal(storage.NewRecord(userID, postID, data, now, now))
+	record := storage.NewRecord(userID, postID, data, now, now)
+	marshaledRecord, err := json.Marshal(record)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error marhalling record: %w", err)
+		return nil, fmt.Errorf("error marhalling record: %w", err)
 	}
 
-	_, err = r.client.HSet(ctx, userID, postID, string(record)).Result()
+	_, err = r.client.HSet(ctx, userID, postID, string(marshaledRecord)).Result()
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error creating: %w", err)
+		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
-	return postID, now, nil
+	return record, nil
 }
 
 func (r *Redis) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {

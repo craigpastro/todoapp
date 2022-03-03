@@ -61,19 +61,19 @@ func TestMain(m *testing.M) {
 
 func TestRead(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := db.Create(ctx, userID, data)
-	record, err := db.Read(ctx, userID, postID)
+	created, _ := db.Create(ctx, userID, data)
+	record, err := db.Read(ctx, created.UserID, created.PostID)
 
 	if err != nil {
 		t.Errorf("error not nil: %v", err)
 	}
 
-	if record.UserID != userID {
+	if record.UserID != created.UserID {
 		t.Errorf("wrong userID: got '%s', but wanted '%s'", record.UserID, userID)
 	}
 
-	if record.PostID != postID {
-		t.Errorf("wrong postID: got '%s', but wanted '%s'", record.PostID, postID)
+	if record.PostID != created.PostID {
+		t.Errorf("wrong postID: got '%s', but wanted '%s'", record.PostID, created.PostID)
 	}
 
 	if record.Data != data {
@@ -105,10 +105,10 @@ func TestReadAll(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := db.Create(ctx, userID, data)
+	created, _ := db.Create(ctx, userID, data)
 	newData := "new data"
-	db.Update(ctx, userID, postID, newData)
-	record, _ := db.Read(ctx, userID, postID)
+	db.Update(ctx, userID, created.PostID, newData)
+	record, _ := db.Read(ctx, created.UserID, created.PostID)
 
 	if record.Data != newData {
 		t.Errorf("wrong data: got '%s', but wanted '%s'", record.Data, newData)
@@ -128,14 +128,14 @@ func TestUpdateNotExists(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	userID := myid.New()
-	postID, _, _ := db.Create(ctx, userID, data)
+	created, _ := db.Create(ctx, userID, data)
 
-	if err := db.Delete(ctx, userID, postID); err != nil {
+	if err := db.Delete(ctx, userID, created.PostID); err != nil {
 		t.Errorf("error not nil: %v", err)
 	}
 
 	// Now try to read the deleted record; it should not exist.
-	if _, err := db.Read(ctx, userID, postID); !errors.Is(err, storage.ErrPostDoesNotExist) {
+	if _, err := db.Read(ctx, userID, created.PostID); !errors.Is(err, storage.ErrPostDoesNotExist) {
 		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
 	}
 }

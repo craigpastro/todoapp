@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -13,12 +14,14 @@ import (
 )
 
 type updateCommand struct {
+	cache   cache.Cache
 	storage storage.Storage
 	tracer  trace.Tracer
 }
 
-func NewUpdateCommand(storage storage.Storage, tracer trace.Tracer) *updateCommand {
+func NewUpdateCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *updateCommand {
 	return &updateCommand{
+		cache:   cache,
 		storage: storage,
 		tracer:  tracer,
 	}
@@ -35,6 +38,7 @@ func (c *updateCommand) Execute(ctx context.Context, req *pb.UpdateRequest) (*pb
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
+	c.cache.Remove(ctx, userID, postID)
 
 	return &pb.UpdateResponse{
 		PostId:    req.PostId,

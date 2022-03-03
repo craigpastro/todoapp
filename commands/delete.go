@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 
+	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -13,12 +14,14 @@ import (
 )
 
 type deleteCommand struct {
+	cache   cache.Cache
 	storage storage.Storage
 	tracer  trace.Tracer
 }
 
-func NewDeleteCommand(storage storage.Storage, tracer trace.Tracer) *deleteCommand {
+func NewDeleteCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *deleteCommand {
 	return &deleteCommand{
+		cache:   cache,
 		storage: storage,
 		tracer:  tracer,
 	}
@@ -34,6 +37,7 @@ func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*em
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
+	c.cache.Remove(ctx, userID, postID)
 
 	return &emptypb.Empty{}, nil
 }

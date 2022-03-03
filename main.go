@@ -6,6 +6,8 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/craigpastro/crudapp/cache"
+	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/server"
@@ -34,6 +36,7 @@ type Config struct {
 	RPCAddr     string `split_words:"true" default:"127.0.0.1:9090"`
 	ServerAddr  string `split_words:"true" default:"127.0.0.1:8080"`
 	StorageType string `split_words:"true" default:"memory"`
+	CacheType   string `split_words:"true" default:"noop"`
 
 	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
 	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"false"`
@@ -88,6 +91,10 @@ func run(ctx context.Context, config Config) {
 		logger.Fatal("error initializing storage", instrumentation.Error(err))
 	}
 
+	cache, err := newCache(config.CacheType)
+	if err != nil {
+		logger.Fatal("error initializing cache", instrumentation.Error(err))
+	}
 	s := grpc.NewServer(
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			grpc_zap.StreamServerInterceptor(logger),
@@ -96,7 +103,7 @@ func run(ctx context.Context, config Config) {
 			grpc_zap.UnaryServerInterceptor(logger),
 		)),
 	)
-	pb.RegisterServiceServer(s, server.NewServer(tracer, storage))
+	pb.RegisterServiceServer(s, server.NewServer(cache, storage, tracer))
 	reflection.Register(s)
 
 	lis, err := net.Listen("tcp", config.RPCAddr)
@@ -121,6 +128,15 @@ func run(ctx context.Context, config Config) {
 	}
 }
 
+func newCache(cacheType string) (cache.Cache, error) {
+	switch cacheType {
+	case "noop":
+		return cache.NewNoopCache(), nil
+	default:
+		return nil, errors.ErrUndefinedCacheType
+	}
+}
+
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "dynamodb":
@@ -134,6 +150,6 @@ func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storag
 	case "redis":
 		return redis.New(ctx, tracer, config.RedisAddr, config.RedisPassword)
 	default:
-		return nil, storage.ErrUndefinedStorageType
+		return nil, errors.ErrUndefinedStorageType
 	}
 }

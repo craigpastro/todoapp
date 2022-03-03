@@ -46,7 +46,7 @@ func New(ctx context.Context, tracer trace.Tracer, connectionURI string) (storag
 	}, nil
 }
 
-func (m *MongoDB) Create(ctx context.Context, userID, data string) (string, time.Time, error) {
+func (m *MongoDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	ctx, span := m.tracer.Start(ctx, "mongodb.Create")
 	defer span.End()
 
@@ -55,10 +55,10 @@ func (m *MongoDB) Create(ctx context.Context, userID, data string) (string, time
 	record := storage.NewRecord(userID, postID, data, now, now)
 	_, err := m.coll.InsertOne(ctx, record)
 	if err != nil {
-		return "", time.Time{}, fmt.Errorf("error creating: %w", err)
+		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
-	return postID, now, nil
+	return record, nil
 }
 
 func (m *MongoDB) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
