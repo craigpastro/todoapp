@@ -51,6 +51,10 @@ jobs:
         image: amazon/dynamodb-local
         ports:
           - 8000:8000
+      memcached:
+        image: memcached:latest
+        ports:
+          - 11211:11211
       mongodb:
         image: mongo:4.4.11
         env:
