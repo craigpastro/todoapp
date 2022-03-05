@@ -58,7 +58,7 @@ func TestGet(t *testing.T) {
 	c.Add(ctx, userID, postID, record)
 	gotRecord, ok := c.Get(ctx, userID, postID)
 
-	if ok != true {
+	if !ok {
 		t.Error("did not get record")
 	}
 
@@ -73,12 +73,12 @@ func TestRemove(t *testing.T) {
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 	c.Add(ctx, userID, postID, record)
-	if _, ok := c.Get(ctx, userID, postID); ok == false {
+	if _, ok := c.Get(ctx, userID, postID); !ok {
 		t.Error("error inserting record")
 	}
 
 	c.Remove(ctx, userID, postID)
-	if _, ok := c.Get(ctx, userID, postID); ok == true {
+	if _, ok := c.Get(ctx, userID, postID); ok {
 		t.Error("error removing record")
 	}
 }
