@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/aws/aws-sdk-go v1.42.52
+	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
 	github.com/envoyproxy/protoc-gen-validate v0.6.3
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
@@ -24,8 +25,6 @@ require (
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.2.0
 	google.golang.org/protobuf v1.27.1
 )
-
-require go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.29.0
 
 require (
 	cloud.google.com/go v0.65.0 // indirect
