@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/craigpastro/crudapp/storage"
 )
@@ -9,7 +10,11 @@ import (
 type Cache interface {
 	Add(ctx context.Context, userID, postID string, record *storage.Record)
 	Get(ctx context.Context, userID, postID string) (*storage.Record, bool)
-	Remove(ctx context.Context, userID, postID string) bool
+	Remove(ctx context.Context, userID, postID string)
+}
+
+func CreateKey(userID, postID string) string {
+	return fmt.Sprintf("%s#%s", userID, postID)
 }
 
 type noopCache struct{}
@@ -24,6 +29,4 @@ func (n *noopCache) Get(_ context.Context, _, _ string) (*storage.Record, bool) 
 	return nil, false
 }
 
-func (n *noopCache) Remove(_ context.Context, _, _ string) bool {
-	return true
-}
+func (n *noopCache) Remove(_ context.Context, _, _ string) {}

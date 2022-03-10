@@ -4,6 +4,11 @@ services:
     image: amazon/dynamodb-local:latest
     ports:
       - "8000:8000"
+  
+  memcached:
+    image: memcached:latest
+    ports:
+      - "11211:11211"
     
   mongodb:
     image: mongo:4.4.11
