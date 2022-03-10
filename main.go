@@ -9,6 +9,7 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
+	cache_memory "github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/protos/api/v1"
@@ -38,7 +39,9 @@ type Config struct {
 	RPCAddr     string `split_words:"true" default:"127.0.0.1:9090"`
 	ServerAddr  string `split_words:"true" default:"127.0.0.1:8080"`
 	StorageType string `split_words:"true" default:"memory"`
-	CacheType   string `split_words:"true" default:"memcached"`
+	CacheType   string `split_words:"true" default:"memory"`
+
+	CacheSize int `split_words:"true" default:"10000"`
 
 	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
 	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"false"`
@@ -135,10 +138,12 @@ func run(ctx context.Context, config Config) {
 
 func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
 	switch config.CacheType {
-	case "noop":
-		return cache.NewNoopCache(), nil
 	case "memcached":
 		return memcached.New(tracer, strings.Split(config.MemcachedServers, ","))
+	case "memory":
+		return cache_memory.New(tracer, config.CacheSize)
+	case "noop":
+		return cache.NewNoopCache(), nil
 	default:
 		return nil, errors.ErrUndefinedCacheType
 	}
