@@ -9,6 +9,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.3
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/jackc/pgx/v4 v4.15.0
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/segmentio/ksuid v1.0.4
