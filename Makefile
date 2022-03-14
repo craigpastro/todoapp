@@ -15,20 +15,11 @@ create-local-postgres-table:
 
 create-all-local-tables: create-local-postgres-table create-local-dynamodb-table
 
+build-protos:
+	buf generate proto
+
 test: build-protos
 	go test ./...
-
-build-protos:
-	protoc \
-		-I ./protos \
-		--go_out=./protos --go_opt=paths=source_relative \
-		--go-grpc_out=./protos --go-grpc_opt=paths=source_relative \
-		--grpc-gateway_out=./protos \
-		--grpc-gateway_opt=paths=source_relative \
-		--grpc-gateway_opt=logtostderr=true \
-		--grpc-gateway_opt=generate_unbound_methods=true \
-		--openapiv2_out=./protos \
-		./protos/api/v1/service.proto
 
 build: build-protos
 	go build -o ./bin/crudapp main.go

@@ -9,8 +9,8 @@ import (
 	"testing"
 
 	"github.com/craigpastro/crudapp/cache"
+	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
 	"github.com/craigpastro/crudapp/myid"
-	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"

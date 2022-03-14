@@ -5,12 +5,11 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
+	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
 	"github.com/craigpastro/crudapp/instrumentation"
-	pb "github.com/craigpastro/crudapp/protos/api/v1"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type deleteCommand struct {
@@ -27,7 +26,7 @@ func NewDeleteCommand(cache cache.Cache, storage storage.Storage, tracer trace.T
 	}
 }
 
-func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*emptypb.Empty, error) {
+func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	userID := req.UserId
 	postID := req.PostId
 	ctx, span := c.tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -39,5 +38,5 @@ func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*em
 	}
 	c.cache.Remove(ctx, userID, postID)
 
-	return &emptypb.Empty{}, nil
+	return &pb.DeleteResponse{}, nil
 }

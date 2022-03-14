@@ -25,8 +25,8 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17.x'
-      - name: Install protoc
-        uses: arduino/setup-protoc@v1
+      - name: Install buf
+        uses: bufbuild/buf-setup-action@v0.5.0
       - name: Install protoc-gen-go
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go
@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: char0n/swagger-editor-validate@v1
         with:
-          definition-file: protos/api/v1/service.swagger.json
+          definition-file: gen/proto/api/v1/service.swagger.json
 
   test:
     runs-on: ubuntu-latest
@@ -92,8 +92,8 @@ jobs:
       - uses: actions/setup-go@v2
         with:
           go-version: '1.17.x'
-      - name: Install protoc
-        uses: arduino/setup-protoc@v1
+      - name: Install buf
+        uses: bufbuild/buf-setup-action@v0.5.0
       - name: Install protoc-gen-go
         run: |
           go install google.golang.org/protobuf/cmd/protoc-gen-go
