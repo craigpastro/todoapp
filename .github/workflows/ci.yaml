@@ -42,7 +42,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: char0n/swagger-editor-validate@v1
         with:
-          definition-file: gen/proto/api/v1/service.swagger.json
+          definition-file: docs/api/v1/service.swagger.json
 
   test:
     runs-on: ubuntu-latest
