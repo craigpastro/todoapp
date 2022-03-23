@@ -20,15 +20,19 @@ create-all-local-tables: create-local-postgres-table create-local-dynamodb-table
 
 .PHONY: build-protos
 build-protos:
-	buf generate proto
+	@buf generate proto
+
+.PHONY: lint
+lint:
+	@golangci-lint run
 
 .PHONY: test
 test: build-protos
-	go test ./...
+	@go test ./...
 
 .PHONY: build
 build: build-protos
-	go build -o ./bin/crudapp main.go
+	@go build -o ./bin/crudapp main.go
 
 .PHONY: run
 run: build

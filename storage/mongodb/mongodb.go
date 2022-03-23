@@ -89,7 +89,9 @@ func (m *MongoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record
 	res := []*storage.Record{}
 	for cur.Next(ctx) {
 		var record storage.Record
-		cur.Decode(&record)
+		if err := cur.Decode(&record); err != nil {
+			return nil, fmt.Errorf("error decoding: %w", err)
+		}
 		res = append(res, &record)
 	}
 

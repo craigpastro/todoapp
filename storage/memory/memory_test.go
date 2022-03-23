@@ -11,10 +11,7 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-const (
-	userID = "123"
-	data   = "some data"
-)
+const data = "some data"
 
 var (
 	ctx    context.Context
