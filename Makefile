@@ -14,6 +14,9 @@ buf-mod-update: install-tools
 buf-generate: buf-mod-update
 	@buf generate
 
+.PHONY: build-protos
+build-protos: buf-generate
+
 .PHONY: lint
 lint: install-tools
 	@golangci-lint run
