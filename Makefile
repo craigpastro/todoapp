@@ -1,3 +1,31 @@
+.PHONY: download
+download:
+	@go mod download
+
+.PHONY: install-tools
+install-tools: download
+	@go list -f '{{range .Imports}}{{.}} {{end}}' tools/tools.go | xargs go install
+
+.PHONY: buf-mod-update
+buf-mod-update: install-tools
+	@test -s ./proto/buf.lock || buf mod update proto
+
+.PHONY: buf-generate
+buf-generate: buf-mod-update
+	@buf generate
+
+.PHONY: lint
+lint: install-tools
+	@golangci-lint run
+
+.PHONY: test
+test: build-protos
+	@go test ./...
+
+.PHONY: build
+build: build-protos
+	@go build -o ./bin/crudapp main.go
+
 .PHONY: create-local-dynamodb-table
 create-local-dynamodb-table:
 	aws dynamodb create-table \
@@ -17,22 +45,6 @@ create-local-postgres-table:
 
 .PHONY: create-all-local-tables
 create-all-local-tables: create-local-postgres-table create-local-dynamodb-table
-
-.PHONY: build-protos
-build-protos:
-	@buf generate proto
-
-.PHONY: lint
-lint:
-	@golangci-lint run
-
-.PHONY: test
-test: build-protos
-	@go test ./...
-
-.PHONY: build
-build: build-protos
-	@go build -o ./bin/crudapp main.go
 
 .PHONY: run
 run: build
