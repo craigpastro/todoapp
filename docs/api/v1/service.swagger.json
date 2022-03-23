@@ -128,7 +128,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "properties": {}
+              "$ref": "#/definitions/v1DeleteResponse"
             }
           },
           "default": {
@@ -244,6 +244,9 @@
           "format": "date-time"
         }
       }
+    },
+    "v1DeleteResponse": {
+      "type": "object"
     },
     "v1ReadAllResponse": {
       "type": "object",

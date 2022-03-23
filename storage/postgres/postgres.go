@@ -76,7 +76,9 @@ func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	var res []*storage.Record
 	for rows.Next() {
 		var record storage.Record
-		rows.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt)
+		if err := rows.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt); err != nil {
+			return nil, fmt.Errorf("error scanning: %w", err)
+		}
 		res = append(res, &record)
 	}
 

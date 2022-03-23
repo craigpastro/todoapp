@@ -5,10 +5,9 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/commands"
-	pb "github.com/craigpastro/crudapp/protos/api/v1"
+	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type server struct {
@@ -47,7 +46,7 @@ func (s *server) Update(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateR
 	return c.Execute(ctx, req)
 }
 
-func (s *server) Delete(ctx context.Context, req *pb.DeleteRequest) (*emptypb.Empty, error) {
+func (s *server) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
 	c := commands.NewDeleteCommand(s.Cache, s.Storage, s.Tracer)
 	return c.Execute(ctx, req)
 }
