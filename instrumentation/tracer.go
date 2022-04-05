@@ -22,9 +22,13 @@ type TracerConfig struct {
 	Endpoint       string
 }
 
+func NewNoopTracer() trace.Tracer {
+	return trace.NewNoopTracerProvider().Tracer("noop")
+}
+
 func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
 	if !config.Enabled {
-		return otel.Tracer("noop"), nil
+		return NewNoopTracer(), nil
 	}
 
 	client := otlptracegrpc.NewClient(

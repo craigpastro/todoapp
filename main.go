@@ -55,7 +55,7 @@ type Config struct {
 	RedisAddr     string `split_words:"true" default:"localhost:6379"`
 	RedisPassword string `split_words:"true" default:""`
 
-	TraceProviderEnabled bool   `split_words:"true" default:"true"`
+	TraceProviderEnabled bool   `split_words:"true" default:"false"`
 	TraceProviderURL     string `split_words:"true" default:"localhost:4317"`
 }
 

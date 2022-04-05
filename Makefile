@@ -1,10 +1,10 @@
 .PHONY: download
 download:
-	@go mod download
+	@cd tools && go mod download
 
 .PHONY: install-tools
 install-tools: download
-	@go list -f '{{range .Imports}}{{.}} {{end}}' tools/tools.go | xargs go install
+	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
 buf-mod-update: install-tools
