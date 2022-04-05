@@ -10,9 +10,9 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
+	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage/memory"
-	"go.opentelemetry.io/otel"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
@@ -27,7 +27,7 @@ var lis *bufconn.Listener
 
 func TestMain(m *testing.M) {
 	s := grpc.NewServer()
-	tracer := otel.Tracer("noop")
+	tracer := instrumentation.NewNoopTracer()
 	storage := memory.New(tracer)
 	cache := cache.NewNoopCache()
 	pb.RegisterServiceServer(s, NewServer(cache, storage, tracer))
