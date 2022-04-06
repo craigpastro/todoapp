@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
 	"net/http"
 	"strings"
@@ -26,6 +27,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
@@ -69,10 +71,12 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	run(ctx, config)
+	if err := run(ctx, config); err != nil {
+		log.Fatal(err)
+	}
 }
 
-func run(ctx context.Context, config Config) {
+func run(ctx context.Context, config Config) error {
 	logger, err := instrumentation.NewLogger(instrumentation.LoggerConfig{
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
@@ -118,7 +122,11 @@ func run(ctx context.Context, config Config) {
 	if err != nil {
 		logger.Fatal("failed to listen", instrumentation.Error(err))
 	}
-	go s.Serve(lis)
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return s.Serve(lis)
+	})
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{
@@ -134,6 +142,8 @@ func run(ctx context.Context, config Config) {
 	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
 		logger.Fatal("failed to listen and serve", instrumentation.Error(err))
 	}
+
+	return g.Wait()
 }
 
 func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
