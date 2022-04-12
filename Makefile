@@ -1,33 +1,33 @@
 .PHONY: download
 download:
-	@cd tools && go mod download
+	cd tools && go mod download
 
 .PHONY: install-tools
 install-tools: download
-	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
+	cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
 buf-mod-update: install-tools
-	@test -s ./proto/buf.lock || buf mod update proto
+	test -s ./proto/buf.lock || buf mod update proto
 
 .PHONY: buf-generate
 buf-generate: buf-mod-update
-	@buf generate
+	buf generate
 
 .PHONY: build-protos
 build-protos: buf-generate
 
 .PHONY: lint
 lint: install-tools
-	@golangci-lint run
+	golangci-lint run
 
 .PHONY: test
 test: build-protos
-	@go test ./...
+	go test ./...
 
 .PHONY: build
 build: build-protos
-	@go build -o ./bin/crudapp main.go
+	go build -o ./bin/crudapp main.go
 
 .PHONY: create-local-dynamodb-table
 create-local-dynamodb-table:
