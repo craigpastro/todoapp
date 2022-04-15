@@ -21,8 +21,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx = context.Background()
-	tracer, _ = instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
-	db = New(tracer)
+	db = New(instrumentation.NewNoopTracer())
 }
 
 func TestRead(t *testing.T) {

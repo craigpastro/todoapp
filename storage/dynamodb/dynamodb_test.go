@@ -82,10 +82,9 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 	db = &DynamoDB{
 		client: dynamodb.New(sess),
-		tracer: tracer,
+		tracer: instrumentation.NewNoopTracer(),
 	}
 
 	os.Exit(m.Run())

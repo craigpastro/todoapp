@@ -45,10 +45,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 	db = &MongoDB{
 		coll:   client.Database("db").Collection("posts"),
-		tracer: tracer,
+		tracer: instrumentation.NewNoopTracer(),
 	}
 
 	os.Exit(m.Run())

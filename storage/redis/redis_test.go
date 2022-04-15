@@ -44,10 +44,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 	db = &Redis{
 		client: client,
-		tracer: tracer,
+		tracer: instrumentation.NewNoopTracer(),
 	}
 
 	os.Exit(m.Run())

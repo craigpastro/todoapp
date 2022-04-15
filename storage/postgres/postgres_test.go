@@ -50,10 +50,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	tracer, _ := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 	db = &Postgres{
 		pool:   pool,
-		tracer: tracer,
+		tracer: instrumentation.NewNoopTracer(),
 	}
 
 	os.Exit(m.Run())
