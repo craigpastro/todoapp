@@ -14,15 +14,13 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/kelseyhightower/envconfig"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const data = "some data"
 
 var (
-	ctx    context.Context
-	tracer trace.Tracer
-	c      cache.Cache
+	ctx context.Context
+	c   cache.Cache
 )
 
 type Config struct {
@@ -42,10 +40,9 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	tracer, _ = instrumentation.NewTracer(ctx, instrumentation.TracerConfig{Enabled: false})
 	c = &Memory{
 		store:  store,
-		tracer: tracer,
+		tracer: instrumentation.NewNoopTracer(),
 	}
 }
 

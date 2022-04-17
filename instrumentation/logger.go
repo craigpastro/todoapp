@@ -13,14 +13,6 @@ type LoggerConfig struct {
 	Environment    string
 }
 
-func Error(err error) zap.Field {
-	return zap.Error(err)
-}
-
-func String(k, v string) zap.Field {
-	return zap.String(k, v)
-}
-
 func NewLogger(config LoggerConfig) (Logger, error) {
 	return zap.NewProduction(
 		zap.AddCaller(),
@@ -31,4 +23,12 @@ func NewLogger(config LoggerConfig) (Logger, error) {
 			zap.String("environment", config.Environment),
 		),
 	)
+}
+
+func Error(err error) zap.Field {
+	return zap.Error(err)
+}
+
+func String(k, v string) zap.Field {
+	return zap.String(k, v)
 }
