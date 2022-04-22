@@ -18,16 +18,19 @@ type Postgres struct {
 	tracer trace.Tracer
 }
 
-func New(ctx context.Context, tracer trace.Tracer, connectionURI string) (storage.Storage, error) {
-	pool, err := pgxpool.Connect(ctx, connectionURI)
-	if err != nil {
-		return nil, fmt.Errorf("unable to connect to Postgres: %w", err)
-	}
-
+func New(pool *pgxpool.Pool, tracer trace.Tracer) storage.Storage {
 	return &Postgres{
 		pool:   pool,
 		tracer: tracer,
-	}, nil
+	}
+}
+
+func CreatePool(ctx context.Context, connString string) (*pgxpool.Pool, error) {
+	pool, err := pgxpool.Connect(ctx, connString)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing Postgres: %w", err)
+	}
+	return pool, nil
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
