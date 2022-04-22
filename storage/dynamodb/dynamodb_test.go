@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
@@ -37,20 +36,12 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
-	c := aws.Config{Region: aws.String(config.DynamoDBRegion)}
-	if config.DynamoDBLocal {
-		c.Endpoint = aws.String("http://localhost:8000")
-	}
-	sess, err := session.NewSessionWithOptions(session.Options{
-		Config:            c,
-		SharedConfigState: session.SharedConfigEnable,
-	})
+	client, err := CreateClient(ctx, config.DynamoDBRegion, config.DynamoDBLocal)
 	if err != nil {
-		fmt.Printf("error initializing DynamoDB: %v\n", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	client := dynamodb.New(sess)
 	input := &dynamodb.CreateTableInput{
 		TableName: aws.String(tableName),
 		AttributeDefinitions: []*dynamodb.AttributeDefinition{
@@ -82,10 +73,7 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	db = &DynamoDB{
-		client: dynamodb.New(sess),
-		tracer: instrumentation.NewNoopTracer(),
-	}
+	db = New(client, instrumentation.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

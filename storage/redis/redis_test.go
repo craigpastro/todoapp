@@ -10,7 +10,6 @@ import (
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/go-redis/redis/v8"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -34,20 +33,13 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
-	client := redis.NewClient(&redis.Options{
-		Addr:     config.RedisAddr,
-		Password: config.RedisPassword,
-	})
-
-	if _, err := client.Ping(ctx).Result(); err != nil {
-		fmt.Printf("error connecting to Redis: %v\n", err)
+	client, err := CreateClient(ctx, config.RedisAddr, config.RedisPassword)
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	db = &Redis{
-		client: client,
-		tracer: instrumentation.NewNoopTracer(),
-	}
+	db = New(client, instrumentation.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

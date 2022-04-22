@@ -27,7 +27,14 @@ type DynamoDB struct {
 	tracer trace.Tracer
 }
 
-func New(ctx context.Context, tracer trace.Tracer, region string, local bool) (storage.Storage, error) {
+func New(client *dynamodb.DynamoDB, tracer trace.Tracer) storage.Storage {
+	return &DynamoDB{
+		client: client,
+		tracer: tracer,
+	}
+}
+
+func CreateClient(ctx context.Context, region string, local bool) (*dynamodb.DynamoDB, error) {
 	config := aws.Config{Region: aws.String(region)}
 	if local {
 		config.Endpoint = aws.String("http://localhost:8000")
@@ -37,13 +44,9 @@ func New(ctx context.Context, tracer trace.Tracer, region string, local bool) (s
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize session: %w", err)
+		return nil, fmt.Errorf("error initializing DynamoDB: %w", err)
 	}
-
-	return &DynamoDB{
-		client: dynamodb.New(sess),
-		tracer: tracer,
-	}, nil
+	return dynamodb.New(sess), nil
 }
 
 func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {

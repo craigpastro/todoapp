@@ -10,7 +10,6 @@ import (
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -33,11 +32,13 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
-	pool, err := pgxpool.Connect(ctx, config.PostgresURI)
+	pool, err := CreatePool(ctx, config.PostgresURI)
 	if err != nil {
-		fmt.Printf("error initializing Postgres: %v\n", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
+	defer pool.Close()
+
 	if _, err := pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
 		user_id TEXT NOT NULL,
 		post_id TEXT NOT NULL,
@@ -50,10 +51,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	db = &Postgres{
-		pool:   pool,
-		tracer: instrumentation.NewNoopTracer(),
-	}
+	db = New(pool, instrumentation.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

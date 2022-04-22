@@ -162,15 +162,31 @@ func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
 func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
 	switch config.StorageType {
 	case "dynamodb":
-		return dynamodb.New(ctx, tracer, config.DynamoDBRegion, config.DynamoDBLocal)
+		client, err := dynamodb.CreateClient(ctx, config.DynamoDBRegion, config.DynamoDBLocal)
+		if err != nil {
+			return nil, err
+		}
+		return dynamodb.New(client, tracer), nil
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
-		return mongodb.New(ctx, tracer, config.MongoDBURI)
+		coll, err := mongodb.CreateCollection(ctx, config.MongoDBURI)
+		if err != nil {
+			return nil, err
+		}
+		return mongodb.New(coll, tracer), nil
 	case "postgres":
-		return postgres.New(ctx, tracer, config.PostgresURI)
+		pool, err := postgres.CreatePool(ctx, config.PostgresURI)
+		if err != nil {
+			return nil, err
+		}
+		return postgres.New(pool, tracer), nil
 	case "redis":
-		return redis.New(ctx, tracer, config.RedisAddr, config.RedisPassword)
+		client, err := redis.CreateClient(ctx, config.RedisAddr, config.RedisPassword)
+		if err != nil {
+			return nil, err
+		}
+		return redis.New(client, tracer), nil
 	default:
 		return nil, errors.ErrUndefinedStorageType
 	}

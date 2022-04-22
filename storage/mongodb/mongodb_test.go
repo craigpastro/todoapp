@@ -11,9 +11,6 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/kelseyhightower/envconfig"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
 const data = "some data"
@@ -35,20 +32,13 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.MongoDBURI))
+	coll, err := CreateCollection(ctx, config.MongoDBURI)
 	if err != nil {
-		fmt.Printf("error initializing MongoDB: %v\n", err)
-		os.Exit(1)
-	}
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		fmt.Printf("error connecting to MongoDB: %v\n", err)
+		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	db = &MongoDB{
-		coll:   client.Database("db").Collection("posts"),
-		tracer: instrumentation.NewNoopTracer(),
-	}
+	db = New(coll, instrumentation.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

@@ -18,7 +18,14 @@ type Redis struct {
 	tracer trace.Tracer
 }
 
-func New(ctx context.Context, tracer trace.Tracer, addr, password string) (storage.Storage, error) {
+func New(client *redis.Client, tracer trace.Tracer) storage.Storage {
+	return &Redis{
+		client: client,
+		tracer: tracer,
+	}
+}
+
+func CreateClient(ctx context.Context, addr, password string) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     addr,
 		Password: password,
@@ -28,10 +35,7 @@ func New(ctx context.Context, tracer trace.Tracer, addr, password string) (stora
 		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
 	}
 
-	return &Redis{
-		client: client,
-		tracer: tracer,
-	}, nil
+	return client, nil
 }
 
 func (r *Redis) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
