@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 	}
 
 	ctx = context.Background()
-	client, err := CreateClient(ctx, config.RedisAddr, config.RedisAddr)
+	client, err := CreateClient(ctx, config.RedisAddr, config.RedisPassword)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
