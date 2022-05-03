@@ -2,8 +2,7 @@ package memcached
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -30,14 +29,12 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Printf("error reading config: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v\n", err)
 	}
 
 	client := memcache.New(config.MemcachedServers)
 	if err := client.Ping(); err != nil {
-		fmt.Printf("error connecting to Memcached: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error connecting to Memcached: %v\n", err)
 	}
 
 	ctx = context.Background()

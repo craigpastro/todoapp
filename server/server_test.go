@@ -58,7 +58,6 @@ func TestCreate(t *testing.T) {
 
 	if resp.PostId == "" {
 		t.Error("PostId is somehow empty")
-
 	}
 }
 

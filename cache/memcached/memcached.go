@@ -3,6 +3,7 @@ package memcached
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/craigpastro/crudapp/cache"
@@ -15,16 +16,19 @@ type Memcached struct {
 	tracer trace.Tracer
 }
 
-func New(tracer trace.Tracer, servers []string) (cache.Cache, error) {
-	client := memcache.New(servers...)
+func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
+	return &Memcached{
+		client: client,
+		tracer: tracer,
+	}
+}
+
+func CreateClient(servers string) (*memcache.Client, error) {
+	client := memcache.New(strings.Split(servers, ",")...)
 	if err := client.Ping(); err != nil {
 		return nil, err
 	}
-
-	return &Memcached{
-		client: memcache.New(servers...),
-		tracer: tracer,
-	}, nil
+	return client, nil
 }
 
 func (m *Memcached) Add(ctx context.Context, userID, postID string, record *storage.Record) {

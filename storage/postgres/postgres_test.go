@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -27,15 +27,13 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Printf("error reading config: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v\n", err)
 	}
 
 	ctx = context.Background()
 	pool, err := CreatePool(ctx, config.PostgresURI)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	defer pool.Close()
 
@@ -47,8 +45,7 @@ func TestMain(m *testing.M) {
 		updated_at TIMESTAMPTZ,
 		PRIMARY KEY (user_id, post_id)
 	)`); err != nil {
-		fmt.Printf("error creating table: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error creating table: %v\n", err)
 	}
 
 	db = New(pool, instrumentation.NewNoopTracer())

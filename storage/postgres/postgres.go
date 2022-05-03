@@ -18,7 +18,7 @@ type Postgres struct {
 	tracer trace.Tracer
 }
 
-func New(pool *pgxpool.Pool, tracer trace.Tracer) storage.Storage {
+func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 	return &Postgres{
 		pool:   pool,
 		tracer: tracer,

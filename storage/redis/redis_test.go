@@ -3,7 +3,7 @@ package redis
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"os"
 	"testing"
 
@@ -28,15 +28,13 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Printf("error reading config: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v\n", err)
 	}
 
 	ctx = context.Background()
 	client, err := CreateClient(ctx, config.RedisAddr, config.RedisPassword)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 
 	db = New(client, instrumentation.NewNoopTracer())

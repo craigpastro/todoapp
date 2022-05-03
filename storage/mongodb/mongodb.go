@@ -27,7 +27,7 @@ type MongoDB struct {
 	tracer trace.Tracer
 }
 
-func New(coll *mongo.Collection, tracer trace.Tracer) storage.Storage {
+func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 	return &MongoDB{
 		coll:   coll,
 		tracer: tracer,
