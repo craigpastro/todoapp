@@ -18,7 +18,7 @@ type Redis struct {
 	tracer trace.Tracer
 }
 
-func New(client *redis.Client, tracer trace.Tracer) storage.Storage {
+func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	return &Redis{
 		client: client,
 		tracer: tracer,

@@ -2,8 +2,7 @@ package memory
 
 import (
 	"context"
-	"fmt"
-	"os"
+	"log"
 	"reflect"
 	"testing"
 	"time"
@@ -30,14 +29,12 @@ type Config struct {
 func TestMain(m *testing.M) {
 	var config Config
 	if err := envconfig.Process("", &config); err != nil {
-		fmt.Printf("error reading config: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error reading config: %v\n", err)
 	}
 
 	store, err := lru.New(10)
 	if err != nil {
-		fmt.Printf("error creating cache: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("error creating cache: %v\n", err)
 	}
 
 	c = &Memory{

@@ -27,7 +27,7 @@ type DynamoDB struct {
 	tracer trace.Tracer
 }
 
-func New(client *dynamodb.DynamoDB, tracer trace.Tracer) storage.Storage {
+func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
 	return &DynamoDB{
 		client: client,
 		tracer: tracer,
@@ -58,14 +58,14 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Re
 	record := storage.NewRecord(userID, postID, data, now, now)
 	av, err := dynamodbattribute.MarshalMap(record)
 	if err != nil {
-		return nil, fmt.Errorf("error marshalling: %v", err)
+		return nil, fmt.Errorf("error marshalling: %w", err)
 	}
 
 	if _, err := d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      av,
 		TableName: aws.String(tableName),
 	}); err != nil {
-		return nil, fmt.Errorf("error creating: %v", err)
+		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
 	return record, nil
@@ -80,7 +80,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 		Key:       createKey(userID, postID),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error reading: %v", err)
+		return nil, fmt.Errorf("error reading: %w", err)
 	}
 	if result.Item == nil {
 		return nil, storage.ErrPostDoesNotExist
@@ -88,7 +88,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 
 	var record storage.Record
 	if err := dynamodbattribute.UnmarshalMap(result.Item, &record); err != nil {
-		return nil, fmt.Errorf("error unmarshaling, %v", err)
+		return nil, fmt.Errorf("error unmarshaling, %w", err)
 	}
 
 	return &record, nil
@@ -101,7 +101,7 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	keyCond := expression.Key(userIDAttribute).Equal(expression.Value(userID))
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
 	if err != nil {
-		return nil, fmt.Errorf("error building expression: %v", err)
+		return nil, fmt.Errorf("error building expression: %w", err)
 	}
 	result, err := d.client.QueryWithContext(ctx, &dynamodb.QueryInput{
 		TableName:                 aws.String(tableName),
@@ -110,12 +110,12 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 		ExpressionAttributeValues: expr.Values(),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error reading all: %v", err)
+		return nil, fmt.Errorf("error reading all: %w", err)
 	}
 
 	var res []*storage.Record
 	if err := dynamodbattribute.UnmarshalListOfMaps(result.Items, &res); err != nil {
-		return nil, fmt.Errorf("error unmarshaling, %v", err)
+		return nil, fmt.Errorf("error unmarshaling, %w", err)
 	}
 
 	return res, nil
@@ -132,7 +132,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 	condition := expression.AttributeExists(expression.Name(userIDAttribute)).And(expression.AttributeExists(expression.Name(postIDAttribute)))
 	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(condition).Build()
 	if err != nil {
-		return time.Time{}, fmt.Errorf("error building expression: %v", err)
+		return time.Time{}, fmt.Errorf("error building expression: %w", err)
 	}
 
 	input := &dynamodb.UpdateItemInput{
@@ -148,7 +148,7 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 			return time.Time{}, storage.ErrPostDoesNotExist
 		}
 
-		return time.Time{}, fmt.Errorf("error creating: %v", err)
+		return time.Time{}, fmt.Errorf("error creating: %w", err)
 	}
 
 	return now, nil
@@ -162,7 +162,7 @@ func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
 		TableName: aws.String(tableName),
 		Key:       createKey(userID, postID),
 	}); err != nil {
-		return fmt.Errorf("error deleting, %v", err)
+		return fmt.Errorf("error deleting, %w", err)
 	}
 
 	return nil

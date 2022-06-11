@@ -14,7 +14,7 @@ type MemoryDB struct {
 	tracer trace.Tracer
 }
 
-func New(tracer trace.Tracer) storage.Storage {
+func New(tracer trace.Tracer) *MemoryDB {
 	return &MemoryDB{
 		store:  map[string]map[string]*storage.Record{},
 		tracer: tracer,
