@@ -14,7 +14,7 @@ type Memory struct {
 	tracer trace.Tracer
 }
 
-func New(tracer trace.Tracer, size int) (cache.Cache, error) {
+func New(tracer trace.Tracer, size int) (*Memory, error) {
 	store, err := lru.New(size)
 	if err != nil {
 		return nil, err

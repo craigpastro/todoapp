@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"strings"
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
@@ -149,7 +148,11 @@ func run(ctx context.Context, config Config) error {
 func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
 	switch config.CacheType {
 	case "memcached":
-		return memcached.New(tracer, strings.Split(config.MemcachedServers, ","))
+		client, err := memcached.CreateClient(config.MemcachedServers)
+		if err != nil {
+			return nil, err
+		}
+		return memcached.New(client, tracer), nil
 	case "memory":
 		return cache_memory.New(tracer, config.CacheSize)
 	case "noop":
