@@ -4,7 +4,7 @@ download:
 
 .PHONY: install-tools
 install-tools: download
-	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
+	cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
 buf-mod-update: install-tools
@@ -18,15 +18,12 @@ buf-generate: buf-mod-update
 buf-format: buf-mod-update
 	buf format -w
 
-.PHONY: build-protos
-build-protos: buf-generate
-
 .PHONY: lint
 lint:
 	golangci-lint run
 
 .PHONY: test
-test: build-protos
+test: buf-generate
 	go test ./...
 
 .PHONY: build
