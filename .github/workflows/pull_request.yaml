@@ -1,12 +1,7 @@
-name: CI
+name: Pull Request
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
 
 jobs:
   fmt:
@@ -27,14 +22,6 @@ jobs:
           go-version: '1.17.x'
       - run: make build-protos
       - run: go vet
-  
-  validate-swagger:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: char0n/swagger-editor-validate@v1
-        with:
-          definition-file: docs/api/v1/service.swagger.json
 
   test:
     runs-on: ubuntu-latest
