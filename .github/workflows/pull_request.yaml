@@ -21,7 +21,7 @@ jobs:
             ${{ steps.go-cache-paths.output.go-build }}
             ${{ steps.go-cache-paths.output.go-mod }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go
+          restore-keys: ${{ runner.os }}-go-
       - run: gofmt -l
 
   vet:
@@ -41,7 +41,7 @@ jobs:
             ${{ steps.go-cache-paths.output.go-build }}
             ${{ steps.go-cache-paths.output.go-mod }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go
+          restore-keys: ${{ runner.os }}-go-
       - run: make build-protos
       - run: go vet
 
@@ -103,7 +103,7 @@ jobs:
             ${{ steps.go-cache-paths.output.go-build }}
             ${{ steps.go-cache-paths.output.go-mod }}
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go
+          restore-keys: ${{ runner.os }}-go-
       - uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
