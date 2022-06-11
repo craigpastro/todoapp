@@ -2,7 +2,6 @@ package mongodb
 
 import (
 	"context"
-	"errors"
 	"log"
 	"os"
 	"testing"
@@ -11,6 +10,7 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/kelseyhightower/envconfig"
+	"github.com/stretchr/testify/require"
 )
 
 const data = "some data"
@@ -43,90 +43,73 @@ func TestMain(m *testing.M) {
 
 func TestRead(t *testing.T) {
 	userID := myid.New()
-	created, _ := db.Create(ctx, userID, data)
+	created, err := db.Create(ctx, userID, data)
+	require.NoError(t, err)
 	record, err := db.Read(ctx, created.UserID, created.PostID)
+	require.NoError(t, err)
 
-	if err != nil {
-		t.Errorf("error not nil: %v", err)
-	}
-
-	if record.UserID != created.UserID {
-		t.Errorf("wrong userID: got '%s', but wanted '%s'", record.UserID, userID)
-	}
-
-	if record.PostID != created.PostID {
-		t.Errorf("wrong postID: got '%s', but wanted '%s'", record.PostID, created.PostID)
-	}
-
-	if record.Data != data {
-		t.Errorf("wrong data: got '%s', but wanted '%s'", record.Data, data)
-	}
+	require.Equal(t, record.UserID, created.UserID, "got '%s', want '%s'", record.UserID, userID)
+	require.Equal(t, record.PostID, created.PostID, "got '%s', want '%s'", record.PostID, created.PostID)
+	require.Equal(t, record.Data, data, "got '%s', want '%s'", record.Data, data)
 }
 
 func TestReadNotExists(t *testing.T) {
 	userID := myid.New()
-	if _, err := db.Read(ctx, userID, "1"); err != storage.ErrPostDoesNotExist {
-		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
-	}
+
+	_, err := db.Read(ctx, userID, "1")
+	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
 func TestReadAll(t *testing.T) {
 	userID := myid.New()
-	db.Create(ctx, userID, "data 1")
-	db.Create(ctx, userID, "data 2")
+	_, err := db.Create(ctx, userID, "data 1")
+	require.NoError(t, err)
+	_, err = db.Create(ctx, userID, "data 2")
+	require.NoError(t, err)
+
 	records, err := db.ReadAll(ctx, userID)
+	require.NoError(t, err)
 
-	if err != nil {
-		t.Errorf("error not nil: %v", err)
-	}
-
-	if len(records) != 2 {
-		t.Errorf("wrong number of records: got '%d', but wanted '%d'", len(records), 2)
-	}
+	require.Len(t, records, 2, "got '%d', want '%d'", len(records), 2)
 }
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
 	created, _ := db.Create(ctx, userID, data)
 	newData := "new data"
-	db.Update(ctx, userID, created.PostID, newData)
-	record, _ := db.Read(ctx, created.UserID, created.PostID)
 
-	if record.Data != newData {
-		t.Errorf("wrong data: got '%s', but wanted '%s'", record.Data, newData)
-	}
+	_, err := db.Update(ctx, userID, created.PostID, newData)
+	require.NoError(t, err)
+	record, err := db.Read(ctx, created.UserID, created.PostID)
+	require.NoError(t, err)
 
-	if record.CreatedAt.After(record.UpdatedAt) {
-		t.Errorf("createdAt is after updatedAt")
-	}
+	require.Equal(t, record.Data, newData, "got '%s', want '%s'")
+	require.True(t, record.CreatedAt.Before(record.UpdatedAt))
 }
 
 func TestUpdateNotExists(t *testing.T) {
 	userID := myid.New()
-	if _, err := db.Update(ctx, userID, "1", "new data"); err != storage.ErrPostDoesNotExist {
-		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
-	}
+
+	_, err := db.Update(ctx, userID, "1", "new data")
+	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
 func TestDelete(t *testing.T) {
 	userID := myid.New()
 	created, _ := db.Create(ctx, userID, data)
 
-	if err := db.Delete(ctx, userID, created.PostID); err != nil {
-		t.Errorf("error not nil: %v", err)
-	}
+	err := db.Delete(ctx, userID, created.PostID)
+	require.NoError(t, err)
 
 	// Now try to read the deleted record; it should not exist.
-	if _, err := db.Read(ctx, userID, created.PostID); !errors.Is(err, storage.ErrPostDoesNotExist) {
-		t.Errorf("unexpected error: got '%v', but wanted '%v'", err, storage.ErrPostDoesNotExist)
-	}
+	_, err = db.Read(ctx, userID, created.PostID)
+	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
 func TestDeleteNotExists(t *testing.T) {
 	userID := myid.New()
 	postID := myid.New()
 
-	if err := db.Delete(ctx, userID, postID); err != nil {
-		t.Errorf("error not nil: %v", err)
-	}
+	err := db.Delete(ctx, userID, postID)
+	require.NoError(t, err)
 }
