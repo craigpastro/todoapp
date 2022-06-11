@@ -84,7 +84,7 @@ func TestUpdate(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, record.Data, newData, "got '%s', want '%s'")
-	require.True(t, record.CreatedAt.Before(record.UpdatedAt))
+	require.True(t, record.CreatedAt.Before(record.UpdatedAt), "'%s' should be before '%s'", record.CreatedAt, record.UpdatedAt)
 }
 
 func TestUpdateNotExists(t *testing.T) {
