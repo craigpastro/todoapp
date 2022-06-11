@@ -36,7 +36,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - run: make build-protos
+      - run: make buf-generate
       - run: go vet
 
   test:
@@ -83,8 +83,8 @@ jobs:
         ports:
           - 6379:6379
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-go@v2
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
         with:
           go-version-file: './go.mod'
       - uses: actions/cache@v3
