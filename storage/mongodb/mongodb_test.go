@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
@@ -78,6 +79,7 @@ func TestUpdate(t *testing.T) {
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
+	time.Sleep(time.Millisecond)
 	newData := "new data"
 	_, err = db.Update(ctx, userID, created.PostID, newData)
 	require.NoError(t, err)
