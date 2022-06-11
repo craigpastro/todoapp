@@ -7,7 +7,7 @@ install-tools: download
 	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
-buf-mod-update:
+buf-mod-update: install-tools
 	test -s ./proto/buf.lock || buf mod update proto
 
 .PHONY: buf-generate
