@@ -4,15 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"net"
 	"net/http"
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	cache_memory "github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/errors"
-	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
 	"github.com/craigpastro/crudapp/instrumentation"
+	"github.com/craigpastro/crudapp/internal/gen/api/v1/v1connect"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/dynamodb"
@@ -20,16 +19,8 @@ import (
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/kelseyhightower/envconfig"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/reflection"
 )
 
 type Config struct {
@@ -37,8 +28,7 @@ type Config struct {
 	ServiceVersion string `default:"0.1.0"`
 	Environment    string `default:"dev"`
 
-	RPCAddr     string `split_words:"true" default:"127.0.0.1:9090"`
-	ServerAddr  string `split_words:"true" default:"127.0.0.1:8080"`
+	Addr        string `split_words:"true" default:"127.0.0.1:8080"`
 	StorageType string `split_words:"true" default:"memory"`
 	CacheType   string `split_words:"true" default:"memory"`
 
@@ -82,7 +72,7 @@ func run(ctx context.Context, config Config) error {
 		Environment:    config.Environment,
 	})
 	if err != nil {
-		panic(fmt.Sprintf("error initializing logger: %v", err))
+		log.Fatal(fmt.Errorf("error initializing logger: %w", err))
 	}
 
 	tracer, err := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{
@@ -106,43 +96,15 @@ func run(ctx context.Context, config Config) error {
 		logger.Fatal("error initializing cache", instrumentation.Error(err))
 	}
 
-	s := grpc.NewServer(
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpc_zap.StreamServerInterceptor(logger),
-		)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpc_zap.UnaryServerInterceptor(logger),
-		)),
-	)
-	pb.RegisterServiceServer(s, server.NewServer(cache, storage, tracer))
-	reflection.Register(s)
+	mux := http.NewServeMux()
+	mux.Handle(v1connect.NewCrudAppServiceHandler(server.NewServer(cache, storage, tracer)))
 
-	lis, err := net.Listen("tcp", config.RPCAddr)
-	if err != nil {
-		logger.Fatal("failed to listen", instrumentation.Error(err))
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
-	g.Go(func() error {
-		return s.Serve(lis)
-	})
-
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithBlock(),
-		grpc.WithUnaryInterceptor(otelgrpc.UnaryClientInterceptor()),
-	}
-	if err := pb.RegisterServiceHandlerFromEndpoint(ctx, mux, config.RPCAddr, opts); err != nil {
-		logger.Fatal("failed to register service", instrumentation.Error(err))
-	}
-
-	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.ServerAddr, config.StorageType))
-	if err := http.ListenAndServe(config.ServerAddr, mux); err != nil {
+	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Addr, config.StorageType))
+	if err := http.ListenAndServe(config.Addr, mux); err != nil {
 		logger.Fatal("failed to listen and serve", instrumentation.Error(err))
 	}
 
-	return g.Wait()
+	return nil
 }
 
 func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {

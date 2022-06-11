@@ -1,13 +1,13 @@
 .PHONY: download
 download:
-	cd tools && go mod download
+	@cd tools && go mod download
 
 .PHONY: install-tools
 install-tools: download
-	cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
+	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
-buf-mod-update: install-tools
+buf-mod-update:
 	test -s ./proto/buf.lock || buf mod update proto
 
 .PHONY: buf-generate
@@ -22,7 +22,7 @@ buf-format: buf-mod-update
 build-protos: buf-generate
 
 .PHONY: lint
-lint: install-tools
+lint:
 	golangci-lint run
 
 .PHONY: test
@@ -79,24 +79,30 @@ run-redis: build
 
 .PHONY: create
 create:
-	curl -XPOST -i 127.0.0.1:8080/v1/users/${USER_ID}/posts \
+	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Create \
         -H 'Content-Type: application/json' \
-        -d '{"data": "${DATA}"}'
+        -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
 
 .PHONY: read
 read:
-	curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
+	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
+	-H 'Content-Type: application/json' \
+    -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
 
 .PHONY: read-all
 read-all:
-	curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts
+	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
+	-H 'Content-Type: application/json' \
+    -d '{"userId": "${USER_ID}"}'
 
 .PHONY: update
 update:
-	curl -XPATCH -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID} \
-		-H 'Content-Type: application/json' \
-		-d '{"data": "${DATA}"}'
+	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+        -H 'Content-Type: application/json' \
+        -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
 
 .PHONY: delete
 delete:
-	curl -XDELETE -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
+	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+        -H 'Content-Type: application/json' \
+        -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
