@@ -6,8 +6,8 @@ If anything looks weird or can be better, please help me out! Create an issue or
 
 ## Things to do
 
-- Add validators to gRPC. Or perhaps switch to [Twirp](https://github.com/twitchtv/twirp) and find out what they do there.
-- Use mTLS for auth (no auth atm)
+- Add validators
+- Implement preshared key auth
 - Add pagination to read all
 
 And, of course, I welcome suggestions.
@@ -56,9 +56,9 @@ make USER_ID=1 DATA='update my great post' create
 ```
 which just calls
 ```
-curl -XPOST -i 127.0.0.1:8080/v1/users/${USER_ID}/posts \
+curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Create \
   -H 'Content-Type: application/json' \
-  -d '{"data": "${DATA}"}'
+  -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
 ```
 
 ### Read
@@ -69,8 +69,9 @@ make USER_ID=1 POST_ID=2 read
 ```
 which just calls
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
-```
+curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
+	-H 'Content-Type: application/json' \
+  -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'```
 
 ### ReadAll
 
@@ -80,8 +81,9 @@ make USER_ID=1 read-all
 ```
 which just calls
 ```
-curl -XGET -i 127.0.0.1:8080/v1/users/${USER_ID}/posts
-```
+curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
+  -H 'Content-Type: application/json' \
+  -d '{"userId": "${USER_ID}"}'```
 
 ### Update
 
@@ -91,9 +93,9 @@ make USER_ID=1 POST_ID=2 DATA='update my great post' update
 ```
 which just calls
 ```
-curl -XPATCH -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID} \
-	-H 'Content-Type: application/json' \
-	-d '{"data": "${DATA}"}'
+curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+  -H 'Content-Type: application/json' \
+  -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
 ```
 
 ### Delete
@@ -104,8 +106,9 @@ make USER_ID=1 POST_ID=2 delete
 ```
 which just calls
 ```
-curl -XDELETE -i 127.0.0.1:8080/v1/users/${USER_ID}/posts/${POST_ID}
-```
+curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+  -H 'Content-Type: application/json' \
+  -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'```
 
 ## Tracing
 
