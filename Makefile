@@ -8,7 +8,7 @@ install-tools: download
 
 .PHONY: buf-mod-update
 buf-mod-update: install-tools
-	test -s ./proto/buf.lock || buf mod update proto
+	@test -s ./proto/buf.lock || buf mod update proto
 
 .PHONY: buf-generate
 buf-generate: buf-mod-update
@@ -19,7 +19,7 @@ buf-lint: buf-mod-update
 	buf lint
 
 .PHONY: lint
-lint: install-tools
+lint: buf-generate
 	golangci-lint run
 
 .PHONY: test
