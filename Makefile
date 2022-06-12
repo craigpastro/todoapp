@@ -77,29 +77,29 @@ run-redis: build
 .PHONY: create
 create:
 	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Create \
-        -H 'Content-Type: application/json' \
-        -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
+	  -H 'Content-Type: application/json' \
+      -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
 
 .PHONY: read
 read:
 	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
-	-H 'Content-Type: application/json' \
-    -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
+	  -H 'Content-Type: application/json' \
+      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
 
 .PHONY: read-all
 read-all:
 	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
-	-H 'Content-Type: application/json' \
-    -d '{"userId": "${USER_ID}"}'
+	  -H 'Content-Type: application/json' \
+      -d '{"userId": "${USER_ID}"}'
 
 .PHONY: update
 update:
 	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
-        -H 'Content-Type: application/json' \
-        -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
+      -H 'Content-Type: application/json' \
+      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
 
 .PHONY: delete
 delete:
 	curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
-        -H 'Content-Type: application/json' \
-        -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
+      -H 'Content-Type: application/json' \
+      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
