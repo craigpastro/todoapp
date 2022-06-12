@@ -11,8 +11,8 @@ import (
 	"github.com/bufbuild/connect-go"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/instrumentation"
-	pb "github.com/craigpastro/crudapp/internal/gen/api/v1"
-	"github.com/craigpastro/crudapp/internal/gen/api/v1/v1connect"
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
+	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/stretchr/testify/require"
@@ -28,7 +28,7 @@ func TestMain(m *testing.M) {
 	tracer := instrumentation.NewNoopTracer()
 	storage := memory.New(tracer)
 	mux := http.NewServeMux()
-	mux.Handle(v1connect.NewCrudAppServiceHandler(NewServer(cache, storage, tracer)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(cache, storage, tracer)))
 
 	go func() {
 		if err := http.ListenAndServe(addr, mux); err != nil {
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestAPI(t *testing.T) {
-	client := v1connect.NewCrudAppServiceClient(http.DefaultClient, fmt.Sprintf("http://%s", addr))
+	client := crudappv1connect.NewCrudAppServiceClient(http.DefaultClient, fmt.Sprintf("http://%s", addr))
 
 	t.Run("create", func(t *testing.T) {
 		req := connect.NewRequest(&pb.CreateRequest{UserId: myid.New(), Data: data})

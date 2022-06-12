@@ -6,14 +6,14 @@ import (
 	"github.com/bufbuild/connect-go"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/commands"
-	pb "github.com/craigpastro/crudapp/internal/gen/api/v1"
-	"github.com/craigpastro/crudapp/internal/gen/api/v1/v1connect"
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
+	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type server struct {
-	v1connect.UnimplementedCrudAppServiceHandler
+	crudappv1connect.UnimplementedCrudAppServiceHandler
 
 	Cache   cache.Cache
 	Storage storage.Storage

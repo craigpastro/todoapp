@@ -4,7 +4,7 @@ package crudapp.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/craigpastro/crudapp/internal/gen/api/v1";
+option go_package = "github.com/craigpastro/crudapp/internal/gen/crudapp/v1;crudappv1";
 
 service CrudAppService {
   rpc Create(CreateRequest) returns (CreateResponse) {}

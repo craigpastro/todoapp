@@ -4,7 +4,7 @@ download:
 
 .PHONY: install-tools
 install-tools: download
-	cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
+	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
 
 .PHONY: buf-mod-update
 buf-mod-update: install-tools
@@ -14,9 +14,9 @@ buf-mod-update: install-tools
 buf-generate: buf-mod-update
 	buf generate
 
-.PHONY: buf-format
-buf-format: buf-mod-update
-	buf format -w
+.PHONY: buf-lint
+buf-lint: buf-mod-update
+	buf lint
 
 .PHONY: lint
 lint:
@@ -27,7 +27,7 @@ test: buf-generate
 	go test ./...
 
 .PHONY: build
-build: build-protos
+build: buf-generate
 	go build -o ./bin/crudapp main.go
 
 .PHONY: create-local-dynamodb-table

@@ -11,7 +11,7 @@ import (
 	cache_memory "github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
-	"github.com/craigpastro/crudapp/internal/gen/api/v1/v1connect"
+	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/dynamodb"
@@ -97,7 +97,7 @@ func run(ctx context.Context, config Config) error {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle(v1connect.NewCrudAppServiceHandler(server.NewServer(cache, storage, tracer)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(server.NewServer(cache, storage, tracer)))
 
 	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Addr, config.StorageType))
 	if err := http.ListenAndServe(config.Addr, mux); err != nil {

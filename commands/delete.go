@@ -6,7 +6,7 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/instrumentation"
-	pb "github.com/craigpastro/crudapp/internal/gen/api/v1"
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
