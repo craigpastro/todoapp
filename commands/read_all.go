@@ -28,7 +28,7 @@ func NewReadAllCommand(cache cache.Cache, storage storage.Storage, tracer trace.
 }
 
 func (c *readAllCommand) Execute(ctx context.Context, req *pb.ReadAllRequest) (*pb.ReadAllResponse, error) {
-	userID := req.UserId
+	userID := req.GetUserId()
 	ctx, span := c.tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 

@@ -28,11 +28,11 @@ func NewCreateCommand(cache cache.Cache, storage storage.Storage, tracer trace.T
 }
 
 func (c *createCommand) Execute(ctx context.Context, req *pb.CreateRequest) (*pb.CreateResponse, error) {
-	userID := req.UserId
+	userID := req.GetUserId()
 	ctx, span := c.tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	record, err := c.storage.Create(ctx, userID, req.Data)
+	record, err := c.storage.Create(ctx, userID, req.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)

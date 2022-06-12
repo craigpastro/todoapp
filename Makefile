@@ -10,13 +10,13 @@ install-tools: download
 buf-mod-update: install-tools
 	@test -s ./proto/buf.lock || buf mod update proto
 
-.PHONY: buf-generate
-buf-generate: buf-mod-update
-	buf generate
-
 .PHONY: buf-lint
 buf-lint: buf-mod-update
 	buf lint
+
+.PHONY: buf-generate
+buf-generate: buf-lint
+	buf generate
 
 .PHONY: lint
 lint: buf-generate
