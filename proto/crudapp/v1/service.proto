@@ -1,44 +1,21 @@
 syntax = "proto3";
 
-package api.v1;
+package crudapp.v1;
 
-import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "/apiv1";
+option go_package = "github.com/craigpastro/crudapp/internal/gen/crudapp/v1;crudappv1";
 
-service Service {
-  rpc Create(CreateRequest) returns (CreateResponse) {
-    option (google.api.http) = {
-      post: "/v1/users/{user_id}/posts"
-      body: "*"
-    };
-  }
+service CrudAppService {
+  rpc Create(CreateRequest) returns (CreateResponse) {}
 
-  rpc Read(ReadRequest) returns (ReadResponse) {
-    option (google.api.http) = {
-      get: "/v1/users/{user_id}/posts/{post_id}"
-    };
-  }
+  rpc Read(ReadRequest) returns (ReadResponse) {}
 
-  rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {
-    option (google.api.http) = {
-      get: "/v1/users/{user_id}/posts"
-    };
-  }
+  rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {}
 
-  rpc Update(UpdateRequest) returns (UpdateResponse) {
-    option (google.api.http) = {
-      patch: "/v1/users/{user_id}/posts/{post_id}"
-      body: "*"
-    };
-  }
+  rpc Update(UpdateRequest) returns (UpdateResponse) {}
 
-  rpc Delete(DeleteRequest) returns (DeleteResponse) {
-    option (google.api.http) = {
-      delete: "/v1/users/{user_id}/posts/{post_id}"
-    };
-  }
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
 
 message CreateRequest {

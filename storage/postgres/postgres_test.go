@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("error creating table: %v\n", err)
 	}
 
-	db = New(pool, instrumentation.NewNoopTracer())
+	db = New(pool, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }
@@ -87,10 +87,11 @@ func TestReadAll(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
-	created, _ := db.Create(ctx, userID, data)
-	newData := "new data"
+	created, err := db.Create(ctx, userID, data)
+	require.NoError(t, err)
 
-	_, err := db.Update(ctx, userID, created.PostID, newData)
+	newData := "new data"
+	_, err = db.Update(ctx, userID, created.PostID, newData)
 	require.NoError(t, err)
 	record, err := db.Read(ctx, created.UserID, created.PostID)
 	require.NoError(t, err)

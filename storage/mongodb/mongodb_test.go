@@ -5,8 +5,9 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 
-	"github.com/craigpastro/crudapp/instrumentation"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/kelseyhightower/envconfig"
@@ -36,7 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	db = New(coll, instrumentation.NewNoopTracer())
+	db = New(coll, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }
@@ -75,16 +76,18 @@ func TestReadAll(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
-	created, _ := db.Create(ctx, userID, data)
-	newData := "new data"
+	created, err := db.Create(ctx, userID, data)
+	require.NoError(t, err)
 
-	_, err := db.Update(ctx, userID, created.PostID, newData)
+	time.Sleep(time.Millisecond)
+	newData := "new data"
+	_, err = db.Update(ctx, userID, created.PostID, newData)
 	require.NoError(t, err)
 	record, err := db.Read(ctx, created.UserID, created.PostID)
 	require.NoError(t, err)
 
 	require.Equal(t, record.Data, newData, "got '%s', want '%s'")
-	require.True(t, record.CreatedAt.Before(record.UpdatedAt))
+	require.True(t, record.CreatedAt.Before(record.UpdatedAt), "'%s' should be before '%s'", record.CreatedAt, record.UpdatedAt)
 }
 
 func TestUpdateNotExists(t *testing.T) {

@@ -1,4 +1,4 @@
-package instrumentation
+package telemetry
 
 import (
 	"go.uber.org/zap"
@@ -23,6 +23,10 @@ func NewLogger(config LoggerConfig) (Logger, error) {
 			zap.String("environment", config.Environment),
 		),
 	)
+}
+
+func Any(k string, v any) zap.Field {
+	return zap.Any(k, v)
 }
 
 func Error(err error) zap.Field {

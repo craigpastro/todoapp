@@ -9,9 +9,9 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/craigpastro/crudapp/cache"
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -40,7 +40,7 @@ func TestMain(m *testing.M) {
 	ctx = context.Background()
 	c = &Memcached{
 		client: client,
-		tracer: instrumentation.NewNoopTracer(),
+		tracer: telemetry.NewNoopTracer(),
 	}
 }
 

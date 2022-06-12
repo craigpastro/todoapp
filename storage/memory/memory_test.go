@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +19,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx = context.Background()
-	db = New(instrumentation.NewNoopTracer())
+	db = New(telemetry.NewNoopTracer())
 }
 
 func TestRead(t *testing.T) {
@@ -56,10 +56,11 @@ func TestReadAll(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	userID := myid.New()
-	created, _ := db.Create(ctx, userID, data)
-	newData := "new data"
+	created, err := db.Create(ctx, userID, data)
+	require.NoError(t, err)
 
-	_, err := db.Update(ctx, userID, created.PostID, newData)
+	newData := "new data"
+	_, err = db.Update(ctx, userID, created.PostID, newData)
 	require.NoError(t, err)
 	record, err := db.Read(ctx, created.UserID, created.PostID)
 	require.NoError(t, err)

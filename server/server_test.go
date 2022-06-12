@@ -2,38 +2,36 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"log"
-	"net"
+	"net/http"
 	"os"
 	"testing"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/craigpastro/crudapp/cache"
-	pb "github.com/craigpastro/crudapp/gen/proto/api/v1"
-	"github.com/craigpastro/crudapp/instrumentation"
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
+	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage/memory"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
-	"google.golang.org/grpc/test/bufconn"
 )
 
 const (
-	bufSize = 1024 * 1024
-	data    = "some data"
+	addr = "localhost:12345"
+	data = "some data"
 )
 
-var lis *bufconn.Listener
-
 func TestMain(m *testing.M) {
-	s := grpc.NewServer()
-	tracer := instrumentation.NewNoopTracer()
-	storage := memory.New(tracer)
 	cache := cache.NewNoopCache()
-	pb.RegisterServiceServer(s, NewServer(cache, storage, tracer))
-	lis = bufconn.Listen(bufSize)
+	tracer := telemetry.NewNoopTracer()
+	storage := memory.New(tracer)
+	mux := http.NewServeMux()
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(cache, storage, tracer)))
+
 	go func() {
-		if err := s.Serve(lis); err != nil {
+		if err := http.ListenAndServe(addr, mux); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	}()
@@ -41,118 +39,86 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func TestCreate(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+func TestAPI(t *testing.T) {
+	client := crudappv1connect.NewCrudAppServiceClient(http.DefaultClient, fmt.Sprintf("http://%s", addr))
 
-	resp, err := client.Create(ctx, &pb.CreateRequest{UserId: myid.New(), Data: data})
-	require.NoError(t, err)
-	require.NotEmpty(t, resp.PostId)
-}
+	t.Run("create", func(t *testing.T) {
+		req := connect.NewRequest(&pb.CreateRequest{UserId: myid.New(), Data: data})
 
-func TestRead(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+		res, err := client.Create(context.Background(), req)
+		require.NoError(t, err)
 
-	userID := myid.New()
-	create, err := client.Create(ctx, &pb.CreateRequest{UserId: userID, Data: data})
-	require.NoError(t, err)
-	resp, err := client.Read(ctx, &pb.ReadRequest{UserId: userID, PostId: create.PostId})
-	require.NoError(t, err)
+		require.NotEmpty(t, res.Msg.PostId)
+		require.NotEmpty(t, res.Msg.CreatedAt)
+	})
 
-	require.Equal(t, resp.Data, data, "got '%s', want '%s'", resp.Data, data)
-}
+	t.Run("read", func(t *testing.T) {
+		ctx := context.Background()
+		userID := myid.New()
+		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
+		createRes, err := client.Create(ctx, createReq)
+		require.NoError(t, err)
 
-func TestReadNotExists(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		readRes, err := client.Read(ctx, readReq)
+		require.NoError(t, err)
 
-	userID := myid.New()
-	_, err = client.Read(ctx, &pb.ReadRequest{UserId: userID, PostId: "1"})
+		require.Equal(t, readRes.Msg.Data, data, "got '%s', want '%s'", readRes.Msg.Data, data)
+	})
 
-	require.ErrorContains(t, err, "Post does not exist")
-}
+	t.Run("read not exist", func(t *testing.T) {
+		req := connect.NewRequest(&pb.ReadRequest{UserId: myid.New(), PostId: "foo"})
+		_, err := client.Read(context.Background(), req)
+		require.ErrorContains(t, err, "Post does not exist")
+	})
 
-func TestUpdate(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+	t.Run("update", func(t *testing.T) {
+		ctx := context.Background()
+		userID := myid.New()
 
-	userID := myid.New()
-	create, err := client.Create(ctx, &pb.CreateRequest{UserId: userID, Data: data})
-	require.NoError(t, err)
+		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
+		createRes, err := client.Create(ctx, createReq)
+		require.NoError(t, err)
 
-	newData := "new Data"
-	_, err = client.Update(ctx, &pb.UpdateRequest{UserId: userID, PostId: create.PostId, Data: newData})
-	require.NoError(t, err)
-	resp, err := client.Read(ctx, &pb.ReadRequest{UserId: userID, PostId: create.PostId})
-	require.NoError(t, err)
+		newData := "new Data"
+		updateReq := connect.NewRequest(&pb.UpdateRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
+		_, err = client.Update(ctx, updateReq)
+		require.NoError(t, err)
 
-	require.Equal(t, resp.Data, newData, "got '%s', want '%s'", resp.Data, newData)
-	require.True(t, resp.CreatedAt.AsTime().Before(resp.UpdatedAt.AsTime()))
-}
+		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		readRes, err := client.Read(ctx, readReq)
+		require.NoError(t, err)
 
-func TestUpdateNotExists(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+		require.Equal(t, readRes.Msg.Data, newData, "got '%s', want '%s'", readRes.Msg.Data, newData)
+	})
 
-	userID := myid.New()
-	_, err = client.Update(ctx, &pb.UpdateRequest{UserId: userID, PostId: "1", Data: data})
-	require.ErrorContains(t, err, "Post does not exist")
-}
+	t.Run("update not exist", func(t *testing.T) {
+		req := connect.NewRequest(&pb.UpdateRequest{UserId: myid.New(), PostId: "foo", Data: "new data"})
+		_, err := client.Update(context.Background(), req)
+		require.ErrorContains(t, err, "Post does not exist")
+	})
 
-func TestDelete(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+	t.Run("delete", func(t *testing.T) {
+		ctx := context.Background()
+		userID := myid.New()
+		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
+		createRes, err := client.Create(ctx, createReq)
+		require.NoError(t, err)
 
-	userID := myid.New()
-	create, err := client.Create(ctx, &pb.CreateRequest{UserId: userID, Data: data})
-	require.NoError(t, err)
-	_, err = client.Delete(ctx, &pb.DeleteRequest{UserId: userID, PostId: create.PostId})
-	require.NoError(t, err)
+		deleteReq := connect.NewRequest(&pb.DeleteRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		_, err = client.Delete(ctx, deleteReq)
+		require.NoError(t, err)
 
-	// Now try to read the deleted record; it should not exist.
-	_, err = client.Read(ctx, &pb.ReadRequest{UserId: userID, PostId: create.PostId})
-	require.ErrorContains(t, err, "Post does not exist")
-}
+		// Now try to read the deleted record; it should not exist.
+		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		_, err = client.Read(ctx, readReq)
+		require.ErrorContains(t, err, "Post does not exist")
+	})
 
-func TestDeleteNotExists(t *testing.T) {
-	ctx := context.Background()
-	opt := grpc.WithTransportCredentials(insecure.NewCredentials())
-	conn, err := grpc.DialContext(ctx, "bufnet", grpc.WithContextDialer(bufDialer), opt)
-	require.NoError(t, err)
-	defer conn.Close()
-	client := pb.NewServiceClient(conn)
+	t.Run("delete not exist", func(t *testing.T) {
+		req := connect.NewRequest(&pb.DeleteRequest{UserId: myid.New(), PostId: "foo"})
+		_, err := client.Delete(context.Background(), req)
+		require.NoError(t, err)
+	})
 
-	userID := myid.New()
-	postID := myid.New()
-	_, err = client.Delete(ctx, &pb.DeleteRequest{UserId: userID, PostId: postID})
-	require.NoError(t, err)
-}
-
-func bufDialer(context.Context, string) (net.Conn, error) {
-	return lis.Dial()
 }

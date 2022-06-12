@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"github.com/craigpastro/crudapp/cache"
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/kelseyhightower/envconfig"
 )
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 	c = &Memory{
 		store:  store,
-		tracer: instrumentation.NewNoopTracer(),
+		tracer: telemetry.NewNoopTracer(),
 	}
 }
 
