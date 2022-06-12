@@ -40,7 +40,7 @@ func (m *Memcached) Add(ctx context.Context, userID, postID string, record *stor
 		return
 	}
 
-	m.client.Set(&memcache.Item{
+	_ = m.client.Set(&memcache.Item{
 		Key:   cache.CreateKey(userID, postID),
 		Value: b,
 	})
@@ -67,5 +67,5 @@ func (m *Memcached) Remove(ctx context.Context, userID, postID string) {
 	_, span := m.tracer.Start(ctx, "memcached.Removed")
 	defer span.End()
 
-	m.client.Delete(cache.CreateKey(userID, postID))
+	_ = m.client.Delete(cache.CreateKey(userID, postID))
 }
