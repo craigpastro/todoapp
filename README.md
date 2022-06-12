@@ -72,6 +72,7 @@ which just calls
 curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
 	-H 'Content-Type: application/json' \
   -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'```
+```
 
 ### ReadAll
 
@@ -84,6 +85,7 @@ which just calls
 curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
   -H 'Content-Type: application/json' \
   -d '{"userId": "${USER_ID}"}'```
+```
 
 ### Update
 
@@ -109,6 +111,7 @@ which just calls
 curl -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
   -H 'Content-Type: application/json' \
   -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'```
+```
 
 ## Tracing
 
