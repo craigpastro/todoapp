@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
