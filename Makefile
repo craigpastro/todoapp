@@ -19,7 +19,7 @@ buf-lint: buf-mod-update
 	buf lint
 
 .PHONY: lint
-lint:
+lint: install-tools
 	golangci-lint run
 
 .PHONY: test
