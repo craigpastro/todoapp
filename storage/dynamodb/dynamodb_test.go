@@ -9,9 +9,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +70,7 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	db = New(client, instrumentation.NewNoopTracer())
+	db = New(client, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

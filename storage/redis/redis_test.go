@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	db = New(client, instrumentation.NewNoopTracer())
+	db = New(client, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

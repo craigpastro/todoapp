@@ -6,9 +6,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
@@ -48,7 +48,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("error creating table: %v\n", err)
 	}
 
-	db = New(pool, instrumentation.NewNoopTracer())
+	db = New(pool, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }

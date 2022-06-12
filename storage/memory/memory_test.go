@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/stretchr/testify/require"
 )
 
@@ -19,7 +19,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx = context.Background()
-	db = New(instrumentation.NewNoopTracer())
+	db = New(telemetry.NewNoopTracer())
 }
 
 func TestRead(t *testing.T) {

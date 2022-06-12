@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/craigpastro/crudapp/instrumentation"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/kelseyhightower/envconfig"
@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	db = New(coll, instrumentation.NewNoopTracer())
+	db = New(coll, telemetry.NewNoopTracer())
 
 	os.Exit(m.Run())
 }
