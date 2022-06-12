@@ -5,9 +5,9 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
-	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -38,7 +38,7 @@ func (c *readCommand) Execute(ctx context.Context, req *pb.ReadRequest) (*pb.Rea
 	if !ok {
 		record, err = c.storage.Read(ctx, userID, postID)
 		if err != nil {
-			instrumentation.TraceError(span, err)
+			telemetry.TraceError(span, err)
 			return nil, errors.HandleStorageError(err)
 		}
 		c.cache.Add(ctx, userID, postID, record)

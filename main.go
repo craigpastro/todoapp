@@ -6,12 +6,13 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/bufbuild/connect-go"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
-	cache_memory "github.com/craigpastro/crudapp/cache/memory"
+	cachememory "github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/errors"
-	"github.com/craigpastro/crudapp/instrumentation"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/dynamodb"
@@ -19,6 +20,7 @@ import (
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/kelseyhightower/envconfig"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -66,7 +68,7 @@ func main() {
 }
 
 func run(ctx context.Context, config Config) error {
-	logger, err := instrumentation.NewLogger(instrumentation.LoggerConfig{
+	logger, err := telemetry.NewLogger(telemetry.LoggerConfig{
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
 		Environment:    config.Environment,
@@ -75,7 +77,7 @@ func run(ctx context.Context, config Config) error {
 		log.Fatal(fmt.Errorf("error initializing logger: %w", err))
 	}
 
-	tracer, err := instrumentation.NewTracer(ctx, instrumentation.TracerConfig{
+	tracer, err := telemetry.NewTracer(ctx, telemetry.TracerConfig{
 		Enabled:        config.TraceProviderEnabled,
 		ServiceName:    config.ServiceName,
 		ServiceVersion: config.ServiceVersion,
@@ -83,25 +85,32 @@ func run(ctx context.Context, config Config) error {
 		Endpoint:       config.TraceProviderURL,
 	})
 	if err != nil {
-		logger.Fatal("error initializing tracer", instrumentation.Error(err))
+		logger.Fatal("error initializing tracer", telemetry.Error(err))
 	}
 
 	storage, err := newStorage(ctx, tracer, config)
 	if err != nil {
-		logger.Fatal("error initializing storage", instrumentation.Error(err))
+		logger.Fatal("error initializing storage", telemetry.Error(err))
 	}
 
 	cache, err := newCache(tracer, config)
 	if err != nil {
-		logger.Fatal("error initializing cache", instrumentation.Error(err))
+		logger.Fatal("error initializing cache", telemetry.Error(err))
 	}
 
+	interceptors := connect.WithInterceptors(
+		middleware.NewLoggingInterceptor(logger),
+	)
+
 	mux := http.NewServeMux()
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(server.NewServer(cache, storage, tracer)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
+		server.NewServer(cache, storage, tracer),
+		interceptors,
+	))
 
 	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Addr, config.StorageType))
 	if err := http.ListenAndServe(config.Addr, mux); err != nil {
-		logger.Fatal("failed to listen and serve", instrumentation.Error(err))
+		logger.Fatal("failed to listen and serve", telemetry.Error(err))
 	}
 
 	return nil
@@ -116,7 +125,7 @@ func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
 		}
 		return memcached.New(client, tracer), nil
 	case "memory":
-		return cache_memory.New(tracer, config.CacheSize)
+		return cachememory.New(tracer, config.CacheSize)
 	case "noop":
 		return cache.NewNoopCache(), nil
 	default:

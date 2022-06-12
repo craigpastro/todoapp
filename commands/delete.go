@@ -5,9 +5,9 @@ import (
 
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/errors"
-	"github.com/craigpastro/crudapp/instrumentation"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -33,7 +33,7 @@ func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*pb
 	defer span.End()
 
 	if err := c.storage.Delete(ctx, userID, postID); err != nil {
-		instrumentation.TraceError(span, err)
+		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 	c.cache.Remove(ctx, userID, postID)
