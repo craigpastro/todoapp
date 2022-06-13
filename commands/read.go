@@ -28,8 +28,8 @@ func NewReadCommand(cache cache.Cache, storage storage.Storage, tracer trace.Tra
 }
 
 func (c *readCommand) Execute(ctx context.Context, req *pb.ReadRequest) (*pb.ReadResponse, error) {
-	userID := req.UserId
-	postID := req.PostId
+	userID := req.GetUserId()
+	postID := req.GetPostId()
 	ctx, span := c.tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 

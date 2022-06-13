@@ -27,8 +27,8 @@ func NewDeleteCommand(cache cache.Cache, storage storage.Storage, tracer trace.T
 }
 
 func (c *deleteCommand) Execute(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
-	userID := req.UserId
-	postID := req.PostId
+	userID := req.GetUserId()
+	postID := req.GetPostId()
 	ctx, span := c.tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 

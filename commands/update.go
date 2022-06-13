@@ -28,12 +28,12 @@ func NewUpdateCommand(cache cache.Cache, storage storage.Storage, tracer trace.T
 }
 
 func (c *updateCommand) Execute(ctx context.Context, req *pb.UpdateRequest) (*pb.UpdateResponse, error) {
-	userID := req.UserId
-	postID := req.PostId
+	userID := req.GetUserId()
+	postID := req.GetPostId()
 	ctx, span := c.tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	updatedAt, err := c.storage.Update(ctx, userID, postID, req.Data)
+	updatedAt, err := c.storage.Update(ctx, userID, postID, req.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
