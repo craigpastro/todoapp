@@ -1,0 +1,29 @@
+service:
+  name: crudapp
+  version: 0.1.0
+  environment: dev
+  addr: 127.0.0.1:8080
+
+trace:
+  enabled: false
+  providerURL: localhost:4317
+
+storage:
+  type: memory
+  dynamodb:
+    region: us-west-2
+    local: false
+  mongodb:
+    uri: mongodb://mongodb:password@127.0.0.1:27017
+  postgres:
+    uri: postgres://postgres:password@127.0.0.1:5432/postgres
+  redis:
+    addr: localhost:6379
+    password: 
+
+cache:
+  type: memory
+  size: 10000
+
+  memcached:
+    servers: localhost:11211

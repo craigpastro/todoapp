@@ -10,7 +10,6 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	cachememory "github.com/craigpastro/crudapp/cache/memory"
-	"github.com/craigpastro/crudapp/errors"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/server"
@@ -21,41 +20,69 @@ import (
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/craigpastro/crudapp/telemetry"
-	"github.com/kelseyhightower/envconfig"
+	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
 )
 
 type Config struct {
-	ServiceName    string `split_words:"true" default:"crudapp"`
-	ServiceVersion string `default:"0.1.0"`
-	Environment    string `default:"dev"`
+	Service ServiceConfig
+	Trace   TraceConfig
+	Storage StorageConfig
+	Cache   CacheConfig
+}
 
-	Addr        string `split_words:"true" default:"127.0.0.1:8080"`
-	StorageType string `split_words:"true" default:"memory"`
-	CacheType   string `split_words:"true" default:"memory"`
+type ServiceConfig struct {
+	Name        string
+	Version     string
+	Environment string
+	Addr        string
+}
 
-	CacheSize int `split_words:"true" default:"10000"`
+type TraceConfig struct {
+	Enabled     bool
+	ProviderURL string
+}
 
-	DynamoDBRegion string `envconfig:"DYNAMODB_REGION" default:"us-west-2"`
-	DynamoDBLocal  bool   `envconfig:"DYNAMODB_LOCAL" default:"false"`
+type StorageConfig struct {
+	Type     string // memory, dynamodb, mongodb, postgres, redis
+	DynamoDB DynamodbConfig
+	MongoDB  MongodbConfig
+	Postgres PostgresConfig
+	Redis    RedisConfig
+}
 
-	MongoDBURI string `envconfig:"MONGODB_URI" default:"mongodb://mongodb:password@127.0.0.1:27017"`
+type DynamodbConfig struct {
+	Region string
+	Local  bool
+}
 
-	MemcachedServers string `split_words:"true" default:"localhost:11211"`
+type MongodbConfig struct {
+	URI string
+}
 
-	PostgresURI string `split_words:"true" default:"postgres://postgres:password@127.0.0.1:5432/postgres"`
+type PostgresConfig struct {
+	URI string
+}
 
-	RedisAddr     string `split_words:"true" default:"localhost:6379"`
-	RedisPassword string `split_words:"true" default:""`
+type RedisConfig struct {
+	Addr     string
+	Password string
+}
 
-	TraceProviderEnabled bool   `split_words:"true" default:"false"`
-	TraceProviderURL     string `split_words:"true" default:"localhost:4317"`
+type CacheConfig struct {
+	Type      string // memory, memcached
+	Size      int
+	Memcached MemcachedConfig
+}
+
+type MemcachedConfig struct {
+	Servers string
 }
 
 func main() {
-	var config Config
-	if err := envconfig.Process("", &config); err != nil {
-		panic(fmt.Sprintf("error reading config: %v", err))
+	config, err := readConfig()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	ctx := context.Background()
@@ -67,33 +94,47 @@ func main() {
 	}
 }
 
-func run(ctx context.Context, config Config) error {
+func readConfig() (*Config, error) {
+	viper.SetConfigFile("config.yaml")
+	if err := viper.ReadInConfig(); err != nil {
+		return nil, fmt.Errorf("error reading config: %w", err)
+	}
+
+	var config Config
+	if err := viper.Unmarshal(&config); err != nil {
+		return nil, fmt.Errorf("error reading config: %w", err)
+	}
+
+	return &config, nil
+}
+
+func run(ctx context.Context, config *Config) error {
 	logger, err := telemetry.NewLogger(telemetry.LoggerConfig{
-		ServiceName:    config.ServiceName,
-		ServiceVersion: config.ServiceVersion,
-		Environment:    config.Environment,
+		ServiceName:    config.Service.Name,
+		ServiceVersion: config.Service.Version,
+		Environment:    config.Service.Environment,
 	})
 	if err != nil {
 		log.Fatal(fmt.Errorf("error initializing logger: %w", err))
 	}
 
 	tracer, err := telemetry.NewTracer(ctx, telemetry.TracerConfig{
-		Enabled:        config.TraceProviderEnabled,
-		ServiceName:    config.ServiceName,
-		ServiceVersion: config.ServiceVersion,
-		Environment:    config.Environment,
-		Endpoint:       config.TraceProviderURL,
+		Enabled:        config.Trace.Enabled,
+		ServiceName:    config.Service.Name,
+		ServiceVersion: config.Service.Version,
+		Environment:    config.Service.Environment,
+		Endpoint:       config.Trace.ProviderURL,
 	})
 	if err != nil {
 		logger.Fatal("error initializing tracer", telemetry.Error(err))
 	}
 
-	storage, err := newStorage(ctx, tracer, config)
+	storage, err := newStorage(ctx, tracer, &config.Storage)
 	if err != nil {
 		logger.Fatal("error initializing storage", telemetry.Error(err))
 	}
 
-	cache, err := newCache(tracer, config)
+	cache, err := newCache(tracer, &config.Cache)
 	if err != nil {
 		logger.Fatal("error initializing cache", telemetry.Error(err))
 	}
@@ -108,35 +149,35 @@ func run(ctx context.Context, config Config) error {
 		interceptors,
 	))
 
-	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Addr, config.StorageType))
-	if err := http.ListenAndServe(config.Addr, mux); err != nil {
+	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Service.Addr, config.Storage.Type))
+	if err := http.ListenAndServe(config.Service.Addr, mux); err != nil {
 		logger.Fatal("failed to listen and serve", telemetry.Error(err))
 	}
 
 	return nil
 }
 
-func newCache(tracer trace.Tracer, config Config) (cache.Cache, error) {
-	switch config.CacheType {
+func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
+	switch config.Type {
 	case "memcached":
-		client, err := memcached.CreateClient(config.MemcachedServers)
+		client, err := memcached.CreateClient(config.Memcached.Servers)
 		if err != nil {
 			return nil, err
 		}
 		return memcached.New(client, tracer), nil
 	case "memory":
-		return cachememory.New(tracer, config.CacheSize)
+		return cachememory.New(tracer, config.Size)
 	case "noop":
 		return cache.NewNoopCache(), nil
 	default:
-		return nil, errors.ErrUndefinedCacheType
+		return nil, fmt.Errorf("undefined cache kind: %s", config.Type)
 	}
 }
 
-func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storage.Storage, error) {
-	switch config.StorageType {
+func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
+	switch config.Type {
 	case "dynamodb":
-		client, err := dynamodb.CreateClient(ctx, config.DynamoDBRegion, config.DynamoDBLocal)
+		client, err := dynamodb.CreateClient(ctx, config.DynamoDB.Region, config.DynamoDB.Local)
 		if err != nil {
 			return nil, err
 		}
@@ -144,24 +185,24 @@ func newStorage(ctx context.Context, tracer trace.Tracer, config Config) (storag
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
-		coll, err := mongodb.CreateCollection(ctx, config.MongoDBURI)
+		coll, err := mongodb.CreateCollection(ctx, config.MongoDB.URI)
 		if err != nil {
 			return nil, err
 		}
 		return mongodb.New(coll, tracer), nil
 	case "postgres":
-		pool, err := postgres.CreatePool(ctx, config.PostgresURI)
+		pool, err := postgres.CreatePool(ctx, config.Postgres.URI)
 		if err != nil {
 			return nil, err
 		}
 		return postgres.New(pool, tracer), nil
 	case "redis":
-		client, err := redis.CreateClient(ctx, config.RedisAddr, config.RedisPassword)
+		client, err := redis.CreateClient(ctx, config.Redis.Addr, config.Redis.Password)
 		if err != nil {
 			return nil, err
 		}
 		return redis.New(client, tracer), nil
 	default:
-		return nil, errors.ErrUndefinedStorageType
+		return nil, fmt.Errorf("undefined storage kind: %s", config.Type)
 	}
 }
