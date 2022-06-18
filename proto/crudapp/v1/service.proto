@@ -23,8 +23,8 @@ message CreateRequest {
 }
 
 message CreateResponse {
-  string post_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  google.protobuf.Timestamp created_at = 2 [(validate.rules).timestamp.required = true];;
+  string post_id = 1;
+  google.protobuf.Timestamp created_at = 2;
 }
 
 message ReadRequest {
@@ -33,11 +33,11 @@ message ReadRequest {
 }
 
 message ReadResponse {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string post_id = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string data = 3 [(validate.rules).string = {min_len: 1, max_len: 5000}];
-  google.protobuf.Timestamp created_at = 4 [(validate.rules).timestamp.required = true];;
-  google.protobuf.Timestamp updated_at = 5 [(validate.rules).timestamp.required = true];;
+  string user_id = 1;
+  string post_id = 2;
+  string data = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message ReadAllRequest {
@@ -55,8 +55,8 @@ message UpdateRequest {
 }
 
 message UpdateResponse {
-  string post_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  google.protobuf.Timestamp updated_at = 2 [(validate.rules).timestamp.required = true];;
+  string post_id = 1;
+  google.protobuf.Timestamp updated_at = 2;
 }
 
 message DeleteRequest {
