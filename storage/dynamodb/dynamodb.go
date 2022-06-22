@@ -27,6 +27,11 @@ type DynamoDB struct {
 	tracer trace.Tracer
 }
 
+type Config struct {
+	Region string
+	Local  bool
+}
+
 func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
 	return &DynamoDB{
 		client: client,
@@ -34,13 +39,13 @@ func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
 	}
 }
 
-func CreateClient(ctx context.Context, region string, local bool) (*dynamodb.DynamoDB, error) {
-	config := aws.Config{Region: aws.String(region)}
-	if local {
-		config.Endpoint = aws.String("http://localhost:8000")
+func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error) {
+	cfg := aws.Config{Region: aws.String(config.Region)}
+	if config.Local {
+		cfg.Endpoint = aws.String("http://localhost:8000")
 	}
 	sess, err := session.NewSessionWithOptions(session.Options{
-		Config:            config,
+		Config:            cfg,
 		SharedConfigState: session.SharedConfigEnable,
 	})
 	if err != nil {

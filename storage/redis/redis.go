@@ -18,6 +18,11 @@ type Redis struct {
 	tracer trace.Tracer
 }
 
+type Config struct {
+	Addr     string
+	Password string
+}
+
 func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	return &Redis{
 		client: client,
@@ -25,10 +30,10 @@ func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	}
 }
 
-func CreateClient(ctx context.Context, addr, password string) (*redis.Client, error) {
+func CreateClient(ctx context.Context, config Config) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
+		Addr:     config.Addr,
+		Password: config.Password,
 	})
 
 	if _, err := client.Ping(ctx).Result(); err != nil {

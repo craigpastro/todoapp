@@ -12,26 +12,15 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/kelseyhightower/envconfig"
 )
 
 const data = "some data"
 
 var (
-	ctx context.Context
-	c   cache.Cache
+	c cache.Cache
 )
 
-type Config struct {
-	MemcachedServers string `split_words:"true" default:"localhost:11211"`
-}
-
 func TestMain(m *testing.M) {
-	var config Config
-	if err := envconfig.Process("", &config); err != nil {
-		log.Fatalf("error reading config: %v\n", err)
-	}
-
 	store, err := lru.New(10)
 	if err != nil {
 		log.Fatalf("error creating cache: %v\n", err)
@@ -44,6 +33,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestGet(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	postID := myid.New()
 	now := time.Now()
@@ -61,6 +51,7 @@ func TestGet(t *testing.T) {
 }
 
 func TestRemove(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	postID := myid.New()
 	now := time.Now()

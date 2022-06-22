@@ -45,38 +45,16 @@ type TraceConfig struct {
 
 type StorageConfig struct {
 	Type     string // memory, dynamodb, mongodb, postgres, redis
-	DynamoDB DynamodbConfig
-	MongoDB  MongodbConfig
-	Postgres PostgresConfig
-	Redis    RedisConfig
-}
-
-type DynamodbConfig struct {
-	Region string
-	Local  bool
-}
-
-type MongodbConfig struct {
-	URI string
-}
-
-type PostgresConfig struct {
-	URI string
-}
-
-type RedisConfig struct {
-	Addr     string
-	Password string
+	DynamoDB dynamodb.Config
+	MongoDB  mongodb.Config
+	Postgres postgres.Config
+	Redis    redis.Config
 }
 
 type CacheConfig struct {
 	Type      string // memory, memcached
 	Size      int
-	Memcached MemcachedConfig
-}
-
-type MemcachedConfig struct {
-	Servers string
+	Memcached memcached.Config
 }
 
 func main() {
@@ -160,7 +138,7 @@ func run(ctx context.Context, config *Config) error {
 func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 	switch config.Type {
 	case "memcached":
-		client, err := memcached.CreateClient(config.Memcached.Servers)
+		client, err := memcached.CreateClient(config.Memcached)
 		if err != nil {
 			return nil, err
 		}
@@ -177,7 +155,7 @@ func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
 	switch config.Type {
 	case "dynamodb":
-		client, err := dynamodb.CreateClient(ctx, config.DynamoDB.Region, config.DynamoDB.Local)
+		client, err := dynamodb.CreateClient(ctx, config.DynamoDB)
 		if err != nil {
 			return nil, err
 		}
@@ -185,19 +163,19 @@ func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig)
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
-		coll, err := mongodb.CreateCollection(ctx, config.MongoDB.URI)
+		coll, err := mongodb.CreateCollection(ctx, config.MongoDB)
 		if err != nil {
 			return nil, err
 		}
 		return mongodb.New(coll, tracer), nil
 	case "postgres":
-		pool, err := postgres.CreatePool(ctx, config.Postgres.URI)
+		pool, err := postgres.CreatePool(ctx, config.Postgres)
 		if err != nil {
 			return nil, err
 		}
 		return postgres.New(pool, tracer), nil
 	case "redis":
-		client, err := redis.CreateClient(ctx, config.Redis.Addr, config.Redis.Password)
+		client, err := redis.CreateClient(ctx, config.Redis)
 		if err != nil {
 			return nil, err
 		}
