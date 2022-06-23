@@ -27,6 +27,10 @@ type MongoDB struct {
 	tracer trace.Tracer
 }
 
+type Config struct {
+	URI string
+}
+
 func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 	return &MongoDB{
 		coll:   coll,
@@ -34,9 +38,9 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 	}
 }
 
-func CreateCollection(ctx context.Context, connectionURI string) (*mongo.Collection, error) {
+func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, error) {
 	errMsg := "unable to connect to MongoDB"
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(connectionURI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URI))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}

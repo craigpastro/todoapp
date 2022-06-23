@@ -9,30 +9,17 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
-	"github.com/kelseyhightower/envconfig"
 	"github.com/stretchr/testify/require"
 )
 
 const data = "some data"
 
 var (
-	ctx context.Context
-	db  storage.Storage
+	db storage.Storage
 )
 
-type Config struct {
-	RedisAddr     string `split_words:"true" default:"localhost:6379"`
-	RedisPassword string `split_words:"true" default:""`
-}
-
 func TestMain(m *testing.M) {
-	var config Config
-	if err := envconfig.Process("", &config); err != nil {
-		log.Fatalf("error reading config: %v\n", err)
-	}
-
-	ctx = context.Background()
-	client, err := CreateClient(ctx, config.RedisAddr, config.RedisPassword)
+	client, err := CreateClient(context.Background(), Config{Addr: "localhost:6379", Password: ""})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,6 +30,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestRead(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
@@ -55,6 +43,7 @@ func TestRead(t *testing.T) {
 }
 
 func TestReadNotExists(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 
 	_, err := db.Read(ctx, userID, "1")
@@ -62,6 +51,7 @@ func TestReadNotExists(t *testing.T) {
 }
 
 func TestReadAll(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	_, err := db.Create(ctx, userID, "data 1")
 	require.NoError(t, err)
@@ -75,6 +65,7 @@ func TestReadAll(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
@@ -90,6 +81,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestUpdateNotExists(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 
 	_, err := db.Update(ctx, userID, "1", "new data")
@@ -97,6 +89,7 @@ func TestUpdateNotExists(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	created, _ := db.Create(ctx, userID, data)
 
@@ -109,6 +102,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteNotExists(t *testing.T) {
+	ctx := context.Background()
 	userID := myid.New()
 	postID := myid.New()
 
