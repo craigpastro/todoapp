@@ -20,7 +20,7 @@ var (
 
 func TestMain(m *testing.M) {
 	ctx := context.Background()
-	pool, err := CreatePool(ctx, Config{URI: "postgres://postgres:password@127.0.0.1:5432/postgres"})
+	pool, err := CreatePool(ctx, Config{URL: "postgres://postgres:password@127.0.0.1:5432/postgres"})
 	if err != nil {
 		log.Fatal(err)
 	}

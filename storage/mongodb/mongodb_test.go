@@ -20,7 +20,7 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	coll, err := CreateCollection(context.Background(), Config{URI: "mongodb://mongodb:password@127.0.0.1:27017"})
+	coll, err := CreateCollection(context.Background(), Config{URL: "mongodb://mongodb:password@127.0.0.1:27017"})
 	if err != nil {
 		log.Fatal(err)
 	}

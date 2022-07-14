@@ -14,9 +14,9 @@ storage:
     region: us-west-2
     local: false
   mongodb:
-    uri: mongodb://mongodb:password@127.0.0.1:27017
+    url: mongodb://mongodb:password@127.0.0.1:27017
   postgres:
-    uri: postgres://postgres:password@127.0.0.1:5432/postgres
+    url: postgres://postgres:password@127.0.0.1:5432/postgres
   redis:
     addr: localhost:6379
     password: 

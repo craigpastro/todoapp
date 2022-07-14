@@ -19,7 +19,7 @@ type Postgres struct {
 }
 
 type Config struct {
-	URI string
+	URL string
 }
 
 func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
@@ -30,7 +30,7 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 }
 
 func CreatePool(ctx context.Context, config Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.Connect(ctx, config.URI)
+	pool, err := pgxpool.Connect(ctx, config.URL)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Postgres: %w", err)
 	}
