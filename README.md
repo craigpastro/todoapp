@@ -6,9 +6,9 @@ If anything looks weird or can be better, please help me out! Create an issue or
 
 ## Things to do
 
-- Add validators
+- Switch back to env vars only
 - Implement preshared key auth
-- Add pagination to read all
+- Do streaming with read all
 
 And, of course, I welcome suggestions.
 

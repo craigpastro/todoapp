@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	tableName       = "Posts"
-	userIDAttribute = "UserID"
-	postIDAttribute = "PostID"
+	TableName       = "Posts"
+	UserIDAttribute = "UserID"
+	PostIDAttribute = "PostID"
 )
 
 type DynamoDB struct {
@@ -68,7 +68,7 @@ func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Re
 
 	if _, err := d.client.PutItemWithContext(ctx, &dynamodb.PutItemInput{
 		Item:      av,
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 	}); err != nil {
 		return nil, fmt.Errorf("error creating: %w", err)
 	}
@@ -81,7 +81,7 @@ func (d *DynamoDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 	defer span.End()
 
 	result, err := d.client.GetItemWithContext(ctx, &dynamodb.GetItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		Key:       createKey(userID, postID),
 	})
 	if err != nil {
@@ -103,13 +103,13 @@ func (d *DynamoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 	ctx, span := d.tracer.Start(ctx, "dynamodb.ReadAll")
 	defer span.End()
 
-	keyCond := expression.Key(userIDAttribute).Equal(expression.Value(userID))
+	keyCond := expression.Key(UserIDAttribute).Equal(expression.Value(userID))
 	expr, err := expression.NewBuilder().WithKeyCondition(keyCond).Build()
 	if err != nil {
 		return nil, fmt.Errorf("error building expression: %w", err)
 	}
 	result, err := d.client.QueryWithContext(ctx, &dynamodb.QueryInput{
-		TableName:                 aws.String(tableName),
+		TableName:                 aws.String(TableName),
 		KeyConditionExpression:    expr.KeyCondition(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
@@ -134,14 +134,14 @@ func (d *DynamoDB) Update(ctx context.Context, userID, postID, data string) (tim
 	update := expression.
 		Set(expression.Name("Data"), expression.Value(data)).
 		Set(expression.Name("UpdatedAt"), expression.Value(now))
-	condition := expression.AttributeExists(expression.Name(userIDAttribute)).And(expression.AttributeExists(expression.Name(postIDAttribute)))
+	condition := expression.AttributeExists(expression.Name(UserIDAttribute)).And(expression.AttributeExists(expression.Name(PostIDAttribute)))
 	expr, err := expression.NewBuilder().WithUpdate(update).WithCondition(condition).Build()
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error building expression: %w", err)
 	}
 
 	input := &dynamodb.UpdateItemInput{
-		TableName:                 aws.String(tableName),
+		TableName:                 aws.String(TableName),
 		Key:                       createKey(userID, postID),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
@@ -164,7 +164,7 @@ func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
 	defer span.End()
 
 	if _, err := d.client.DeleteItemWithContext(ctx, &dynamodb.DeleteItemInput{
-		TableName: aws.String(tableName),
+		TableName: aws.String(TableName),
 		Key:       createKey(userID, postID),
 	}); err != nil {
 		return fmt.Errorf("error deleting, %w", err)
@@ -175,10 +175,10 @@ func (d *DynamoDB) Delete(ctx context.Context, userID, postID string) error {
 
 func createKey(userID, postID string) map[string]*dynamodb.AttributeValue {
 	return map[string]*dynamodb.AttributeValue{
-		userIDAttribute: {
+		UserIDAttribute: {
 			S: aws.String(userID),
 		},
-		postIDAttribute: {
+		PostIDAttribute: {
 			S: aws.String(postID),
 		},
 	}
