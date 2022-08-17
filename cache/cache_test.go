@@ -15,6 +15,7 @@ import (
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
 )
 
@@ -64,7 +65,15 @@ func newMemory(t *testing.T) cacheTest {
 func newMemcached(t *testing.T, dockerpool *dockertest.Pool) cacheTest {
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.Run("memcached", "latest", nil)
+	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "memcached",
+		Tag:        "latest",
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	require.NoError(t, err)
 
 	var client *memcache.Client

@@ -24,7 +24,7 @@ lint: buf-generate
 
 .PHONY: test
 test: buf-generate
-	go test ./...
+	go test -v ./...
 
 .PHONY: build
 build: buf-generate

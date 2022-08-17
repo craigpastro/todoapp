@@ -20,6 +20,7 @@ import (
 	realredis "github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -68,7 +69,15 @@ func newDynamoDB(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.Run("amazon/dynamodb-local", "latest", nil)
+	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "amazon/dynamodb-local",
+		Tag:        "latest",
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	require.NoError(t, err)
 
 	var client *ddb.DynamoDB
@@ -131,7 +140,16 @@ func newMongoDB(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.Run("mongo", "latest", []string{"MONGO_INITDB_ROOT_USERNAME=mongodb", "MONGO_INITDB_ROOT_PASSWORD=password"})
+	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "mongo",
+		Tag:        "latest",
+		Env:        []string{"MONGO_INITDB_ROOT_USERNAME=mongodb", "MONGO_INITDB_ROOT_PASSWORD=password"},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	require.NoError(t, err)
 
 	var coll *mongo.Collection
@@ -153,7 +171,16 @@ func newPostgres(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.Run("postgres", "latest", []string{"POSTGRES_USER=postgres", "POSTGRES_PASSWORD=password"})
+	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "postgres",
+		Tag:        "latest",
+		Env:        []string{"POSTGRES_USER=postgres", "POSTGRES_PASSWORD=password"},
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	require.NoError(t, err)
 
 	var pool *pgxpool.Pool
@@ -188,7 +215,15 @@ func newRedis(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.Run("redis", "latest", nil)
+	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
+		Repository: "redis",
+		Tag:        "latest",
+	}, func(config *docker.HostConfig) {
+		config.AutoRemove = true
+		config.RestartPolicy = docker.RestartPolicy{
+			Name: "no",
+		}
+	})
 	require.NoError(t, err)
 
 	var client *realredis.Client
