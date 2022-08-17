@@ -38,7 +38,7 @@ func TestStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	storageTests := []storageTest{
-		newDynamoDB(t, dockerpool),
+		// newDynamoDB(t, dockerpool),
 		newMemory(),
 		newMongoDB(t, dockerpool),
 		newPostgres(t, dockerpool),
