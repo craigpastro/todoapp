@@ -34,6 +34,7 @@ func CreatePool(ctx context.Context, config Config) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing Postgres: %w", err)
 	}
+
 	return pool, nil
 }
 

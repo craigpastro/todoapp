@@ -29,7 +29,8 @@ type DynamoDB struct {
 
 type Config struct {
 	Region string
-	Local  bool
+	// Port. If is supplied it means that we are running locally.
+	Port string
 }
 
 func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
@@ -41,8 +42,8 @@ func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
 
 func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error) {
 	cfg := aws.Config{Region: aws.String(config.Region)}
-	if config.Local {
-		cfg.Endpoint = aws.String("http://localhost:8000")
+	if config.Port != "" {
+		cfg.Endpoint = aws.String(fmt.Sprintf("http://localhost:%s", config.Port))
 	}
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Config:            cfg,

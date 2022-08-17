@@ -68,7 +68,7 @@ func (m *Memcached) Get(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (m *Memcached) Remove(ctx context.Context, userID, postID string) {
-	_, span := m.tracer.Start(ctx, "memcached.Removed")
+	_, span := m.tracer.Start(ctx, "memcached.Remove")
 	defer span.End()
 
 	_ = m.client.Delete(cache.CreateKey(userID, postID))
