@@ -17,32 +17,26 @@ import (
 	"github.com/craigpastro/crudapp/storage/postgres"
 	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/craigpastro/crudapp/telemetry"
-	realredis "github.com/go-redis/redis/v8"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const data = "some data"
 
 type storageTest struct {
-	name     string
-	storage  storage.Storage
-	resource *dockertest.Resource
+	name      string
+	storage   storage.Storage
+	container testcontainers.Container
 }
 
 func TestStorage(t *testing.T) {
-	dockerpool, err := dockertest.NewPool("")
-	require.NoError(t, err)
-
 	storageTests := []storageTest{
-		newDynamoDB(t, dockerpool),
+		newDynamoDB(t),
 		newMemory(),
-		newMongoDB(t, dockerpool),
-		newPostgres(t, dockerpool),
-		newRedis(t, dockerpool),
+		newMongoDB(t),
+		newPostgres(t),
+		newRedis(t),
 	}
 
 	for _, test := range storageTests {
@@ -55,8 +49,8 @@ func TestStorage(t *testing.T) {
 			testDelete(t, test.storage)
 			testDeleteNotExists(t, test.storage)
 
-			if test.resource != nil {
-				if err := test.resource.Close(); err != nil {
+			if test.container != nil {
+				if err := test.container.Terminate(context.Background()); err != nil {
 					log.Println(err)
 				}
 			}
@@ -64,31 +58,27 @@ func TestStorage(t *testing.T) {
 	}
 }
 
-func newDynamoDB(t *testing.T, dockerpool *dockertest.Pool) storageTest {
+func newDynamoDB(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "amazon/dynamodb-local",
-		Tag:        "latest",
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
+	req := testcontainers.ContainerRequest{
+		Image:        "amazon/dynamodb-local:latest",
+		ExposedPorts: []string{"8000/tcp"},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
 	})
 	require.NoError(t, err)
 
-	var client *ddb.DynamoDB
-	err = dockerpool.Retry(func() error {
-		var err error
-		client, err = dynamodb.CreateClient(ctx, dynamodb.Config{Region: "us-west-2", Port: resource.GetPort("8000/tcp")})
-		if err != nil {
-			return err
-		}
-		_, err = client.ListTables(&ddb.ListTablesInput{})
-		return err
-	})
+	port, err := container.MappedPort(ctx, "8000/tcp")
+	require.NoError(t, err)
+
+	client, err := dynamodb.CreateClient(ctx, dynamodb.Config{Region: "us-west-2", Port: port.Port()})
+	require.NoError(t, err)
+
+	_, err = client.ListTables(&ddb.ListTablesInput{})
 	require.NoError(t, err)
 
 	input := &ddb.CreateTableInput{
@@ -122,9 +112,9 @@ func newDynamoDB(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	}
 
 	return storageTest{
-		name:     "dynamodb",
-		storage:  dynamodb.New(client, tracer),
-		resource: resource,
+		name:      "dynamodb",
+		storage:   dynamodb.New(client, tracer),
+		container: container,
 	}
 }
 
@@ -135,62 +125,54 @@ func newMemory() storageTest {
 	}
 }
 
-func newMongoDB(t *testing.T, dockerpool *dockertest.Pool) storageTest {
+func newMongoDB(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "mongo",
-		Tag:        "latest",
-		Env:        []string{"MONGO_INITDB_ROOT_USERNAME=mongodb", "MONGO_INITDB_ROOT_PASSWORD=password"},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
+	req := testcontainers.ContainerRequest{
+		Image:        "mongo:latest",
+		ExposedPorts: []string{"27017/tcp"},
+		Env:          map[string]string{"MONGO_INITDB_ROOT_USERNAME": "mongodb", "MONGO_INITDB_ROOT_PASSWORD": "password"},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
 	})
 	require.NoError(t, err)
 
-	var coll *mongo.Collection
-	err = dockerpool.Retry(func() error {
-		var err error
-		coll, err = mongodb.CreateCollection(ctx, mongodb.Config{URL: fmt.Sprintf("mongodb://mongodb:password@localhost:%s", resource.GetPort("27017/tcp"))})
-		return err
-	})
+	port, err := container.MappedPort(ctx, "27017/tcp")
+	require.NoError(t, err)
+
+	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URL: fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port())})
 	require.NoError(t, err)
 
 	return storageTest{
-		name:     "mongodb",
-		storage:  mongodb.New(coll, tracer),
-		resource: resource,
+		name:      "mongodb",
+		storage:   mongodb.New(coll, tracer),
+		container: container,
 	}
 }
 
-func newPostgres(t *testing.T, dockerpool *dockertest.Pool) storageTest {
+func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "postgres",
-		Tag:        "latest",
-		Env:        []string{"POSTGRES_USER=postgres", "POSTGRES_PASSWORD=password"},
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:14",
+		ExposedPorts: []string{"5432/tcp"},
+		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "password"},
+		WaitingFor:   wait.ForLog("database system is ready to accept connections"),
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
 	})
 	require.NoError(t, err)
 
-	var pool *pgxpool.Pool
-	err = dockerpool.Retry(func() error {
-		var err error
-		pool, err = postgres.CreatePool(ctx, postgres.Config{URL: fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", resource.GetPort("5432/tcp"))})
-		if err != nil {
-			return err
-		}
-		return pool.Ping(ctx)
-	})
+	port, err := container.MappedPort(ctx, "5432/tcp")
+	require.NoError(t, err)
+
+	pool, err := postgres.CreatePool(ctx, postgres.Config{URL: fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())})
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
@@ -204,39 +186,36 @@ func newPostgres(t *testing.T, dockerpool *dockertest.Pool) storageTest {
 	require.NoError(t, err)
 
 	return storageTest{
-		name:     "postgres",
-		storage:  postgres.New(pool, tracer),
-		resource: resource,
+		name:      "postgres",
+		storage:   postgres.New(pool, tracer),
+		container: container,
 	}
 }
 
-func newRedis(t *testing.T, dockerpool *dockertest.Pool) storageTest {
+func newRedis(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "redis",
-		Tag:        "latest",
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
+	req := testcontainers.ContainerRequest{
+		Image:        "redis:latest",
+		ExposedPorts: []string{"6379/tcp"},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
 	})
 	require.NoError(t, err)
 
-	var client *realredis.Client
-	err = dockerpool.Retry(func() error {
-		var err error
-		client, err = redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", resource.GetPort("6379/tcp")), Password: ""})
-		return err
-	})
+	port, err := container.MappedPort(ctx, "6379/tcp")
+	require.NoError(t, err)
+
+	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""})
 	require.NoError(t, err)
 
 	return storageTest{
-		name:     "redis",
-		storage:  redis.New(client, tracer),
-		resource: resource,
+		name:      "redis",
+		storage:   redis.New(client, tracer),
+		container: container,
 	}
 }
 

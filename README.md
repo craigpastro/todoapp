@@ -10,6 +10,7 @@ If anything looks weird or can be better, please help me out! Create an issue or
 - Add retry to storage startups (pings)
 - Implement preshared key auth
 - Do streaming with read all
+- Add health check
 
 And, of course, I welcome suggestions.
 
