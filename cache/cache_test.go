@@ -38,14 +38,11 @@ func TestCache(t *testing.T) {
 
 	for _, test := range cacheTests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			testGet(t, test.cache)
 			testRemove(t, test.cache)
 
 			if test.resource != nil {
-				err := test.resource.Close()
-				if err != nil {
+				if err := test.resource.Close(); err != nil {
 					log.Println(err)
 				}
 			}

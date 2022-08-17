@@ -38,7 +38,7 @@ func TestStorage(t *testing.T) {
 	require.NoError(t, err)
 
 	storageTests := []storageTest{
-		// newDynamoDB(t, dockerpool),
+		newDynamoDB(t, dockerpool),
 		newMemory(),
 		newMongoDB(t, dockerpool),
 		newPostgres(t, dockerpool),
@@ -47,8 +47,6 @@ func TestStorage(t *testing.T) {
 
 	for _, test := range storageTests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			testRead(t, test.storage)
 			testReadNotExists(t, test.storage)
 			testReadAll(t, test.storage)
@@ -58,8 +56,7 @@ func TestStorage(t *testing.T) {
 			testDeleteNotExists(t, test.storage)
 
 			if test.resource != nil {
-				err := test.resource.Close()
-				if err != nil {
+				if err := test.resource.Close(); err != nil {
 					log.Println(err)
 				}
 			}
