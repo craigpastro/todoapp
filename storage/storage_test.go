@@ -102,7 +102,7 @@ func newMongoDB(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URI: "mongodb://mongodb:password@127.0.0.1:27017"})
+	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URL: "mongodb://mongodb:password@127.0.0.1:27017"})
 	require.NoError(t, err)
 
 	return storageTest{
@@ -115,7 +115,7 @@ func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	pool, err := postgres.CreatePool(ctx, postgres.Config{URI: "postgres://postgres:password@127.0.0.1:5432/postgres"})
+	pool, err := postgres.CreatePool(ctx, postgres.Config{URL: "postgres://postgres:password@127.0.0.1:5432/postgres"})
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (

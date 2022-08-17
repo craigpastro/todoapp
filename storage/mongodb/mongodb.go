@@ -28,7 +28,7 @@ type MongoDB struct {
 }
 
 type Config struct {
-	URI string
+	URL string
 }
 
 func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
@@ -40,7 +40,7 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 
 func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, error) {
 	errMsg := "unable to connect to MongoDB"
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URL))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}
