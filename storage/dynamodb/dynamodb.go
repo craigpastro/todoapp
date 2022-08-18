@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
@@ -52,7 +53,14 @@ func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error
 	if err != nil {
 		return nil, fmt.Errorf("error initializing DynamoDB: %w", err)
 	}
-	return dynamodb.New(sess), nil
+
+	client := dynamodb.New(sess)
+	backoff.Retry(func() error {
+		_, err := client.ListTables(&dynamodb.ListTablesInput{})
+		return err
+	}, backoff.NewExponentialBackOff())
+
+	return client, nil
 }
 
 func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
