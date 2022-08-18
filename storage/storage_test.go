@@ -158,7 +158,7 @@ func newPostgres(t *testing.T) storageTest {
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:14",
+		Image:        "postgres:latest",
 		ExposedPorts: []string{"5432/tcp"},
 		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "password"},
 		WaitingFor:   wait.ForLog("database system is ready to accept connections"),

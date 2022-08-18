@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
@@ -29,9 +30,11 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 
 func CreateClient(config Config) (*memcache.Client, error) {
 	client := memcache.New(strings.Split(config.Servers, ",")...)
-	if err := client.Ping(); err != nil {
-		return nil, err
-	}
+
+	backoff.Retry(func() error {
+		return client.Ping()
+	}, backoff.NewExponentialBackOff())
+
 	return client, nil
 }
 

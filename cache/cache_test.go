@@ -7,32 +7,27 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	"github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
-	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
 )
 
 type cacheTest struct {
-	name     string
-	cache    cache.Cache
-	resource *dockertest.Resource
+	name      string
+	cache     cache.Cache
+	container testcontainers.Container
 }
 
 const data = "some data"
 
 func TestCache(t *testing.T) {
-	dockerpool, err := dockertest.NewPool("")
-	require.NoError(t, err)
-
 	cacheTests := []cacheTest{
-		newMemcached(t, dockerpool),
+		newMemcached(t),
 		newMemory(t),
 	}
 
@@ -41,8 +36,8 @@ func TestCache(t *testing.T) {
 			testGet(t, test.cache)
 			testRemove(t, test.cache)
 
-			if test.resource != nil {
-				if err := test.resource.Close(); err != nil {
+			if test.container != nil {
+				if err := test.container.Terminate(context.Background()); err != nil {
 					log.Println(err)
 				}
 			}
@@ -61,35 +56,30 @@ func newMemory(t *testing.T) cacheTest {
 	}
 }
 
-func newMemcached(t *testing.T, dockerpool *dockertest.Pool) cacheTest {
+func newMemcached(t *testing.T) cacheTest {
+	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
 
-	resource, err := dockerpool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "memcached",
-		Tag:        "latest",
-	}, func(config *docker.HostConfig) {
-		config.AutoRemove = true
-		config.RestartPolicy = docker.RestartPolicy{
-			Name: "no",
-		}
+	req := testcontainers.ContainerRequest{
+		Image:        "memcached:latest",
+		ExposedPorts: []string{"11211/tcp"},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
 	})
 	require.NoError(t, err)
 
-	var client *memcache.Client
-	err = dockerpool.Retry(func() error {
-		var err error
-		client, err = memcached.CreateClient(memcached.Config{Servers: fmt.Sprintf("localhost:%s", resource.GetPort("11211/tcp"))})
-		if err != nil {
-			return err
-		}
-		return client.Ping()
-	})
+	port, err := container.MappedPort(ctx, "11211/tcp")
+	require.NoError(t, err)
+
+	client, err := memcached.CreateClient(memcached.Config{Servers: fmt.Sprintf("localhost:%s", port.Port())})
 	require.NoError(t, err)
 
 	return cacheTest{
-		name:     "memcached",
-		cache:    memcached.New(client, tracer),
-		resource: resource,
+		name:      "memcached",
+		cache:     memcached.New(client, tracer),
+		container: container,
 	}
 }
 
