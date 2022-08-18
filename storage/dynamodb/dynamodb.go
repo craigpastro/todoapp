@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
@@ -29,7 +30,8 @@ type DynamoDB struct {
 
 type Config struct {
 	Region string
-	Local  bool
+	// Port. If is supplied it means that we are running locally.
+	Port string
 }
 
 func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
@@ -41,8 +43,8 @@ func New(client *dynamodb.DynamoDB, tracer trace.Tracer) *DynamoDB {
 
 func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error) {
 	cfg := aws.Config{Region: aws.String(config.Region)}
-	if config.Local {
-		cfg.Endpoint = aws.String("http://localhost:8000")
+	if config.Port != "" {
+		cfg.Endpoint = aws.String(fmt.Sprintf("http://localhost:%s", config.Port))
 	}
 	sess, err := session.NewSessionWithOptions(session.Options{
 		Config:            cfg,
@@ -51,7 +53,18 @@ func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error
 	if err != nil {
 		return nil, fmt.Errorf("error initializing DynamoDB: %w", err)
 	}
-	return dynamodb.New(sess), nil
+
+	client := dynamodb.New(sess)
+
+	err = backoff.Retry(func() error {
+		_, err := client.ListTables(&dynamodb.ListTablesInput{})
+		return err
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to DynamoDB: %w", err)
+	}
+
+	return client, nil
 }
 
 func (d *DynamoDB) Create(ctx context.Context, userID, data string) (*storage.Record, error) {

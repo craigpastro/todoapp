@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/jackc/pgx/v4"
@@ -30,10 +31,16 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 }
 
 func CreatePool(ctx context.Context, config Config) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.Connect(ctx, config.URL)
+	var pool *pgxpool.Pool
+	err := backoff.Retry(func() error {
+		var err error
+		pool, err = pgxpool.Connect(ctx, config.URL)
+		return err
+	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		return nil, fmt.Errorf("error initializing Postgres: %w", err)
+		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
 	}
+
 	return pool, nil
 }
 

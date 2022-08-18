@@ -3,9 +3,11 @@ package memcached
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
@@ -29,9 +31,14 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 
 func CreateClient(config Config) (*memcache.Client, error) {
 	client := memcache.New(strings.Split(config.Servers, ",")...)
-	if err := client.Ping(); err != nil {
-		return nil, err
+
+	err := backoff.Retry(func() error {
+		return client.Ping()
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to Memcached: %w", err)
 	}
+
 	return client, nil
 }
 
@@ -68,7 +75,7 @@ func (m *Memcached) Get(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (m *Memcached) Remove(ctx context.Context, userID, postID string) {
-	_, span := m.tracer.Start(ctx, "memcached.Removed")
+	_, span := m.tracer.Start(ctx, "memcached.Remove")
 	defer span.End()
 
 	_ = m.client.Delete(cache.CreateKey(userID, postID))

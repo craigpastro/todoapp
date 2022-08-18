@@ -144,7 +144,7 @@ func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 		}
 		return memcached.New(client, tracer), nil
 	case "memory":
-		return cachememory.New(tracer, config.Size)
+		return cachememory.New(config.Size, tracer)
 	case "noop":
 		return cache.NewNoopCache(), nil
 	default:

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"go.mongodb.org/mongo-driver/bson"
@@ -39,14 +40,16 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 }
 
 func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, error) {
-	errMsg := "unable to connect to MongoDB"
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URL))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", errMsg, err)
+		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
 
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		return nil, fmt.Errorf("%s: %w", errMsg, err)
+	err = backoff.Retry(func() error {
+		return client.Ping(ctx, readpref.Primary())
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
 
 	return client.Database("db").Collection("posts"), nil
