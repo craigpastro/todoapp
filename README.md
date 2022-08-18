@@ -7,7 +7,6 @@ If anything looks weird or can be better, please help me out! Create an issue or
 ## Things to do
 
 - Switch back to env vars only
-- Add retry to storage startups (pings)
 - Implement preshared key auth
 - Do streaming with read all
 - Add health check

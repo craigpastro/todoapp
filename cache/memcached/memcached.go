@@ -3,6 +3,7 @@ package memcached
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/bradfitz/gomemcache/memcache"
@@ -31,9 +32,12 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 func CreateClient(config Config) (*memcache.Client, error) {
 	client := memcache.New(strings.Split(config.Servers, ",")...)
 
-	backoff.Retry(func() error {
+	err := backoff.Retry(func() error {
 		return client.Ping()
 	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to Memcached: %w", err)
+	}
 
 	return client, nil
 }
