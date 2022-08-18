@@ -37,10 +37,13 @@ func CreateClient(ctx context.Context, config Config) (*redis.Client, error) {
 		Password: config.Password,
 	})
 
-	backoff.Retry(func() error {
+	err := backoff.Retry(func() error {
 		_, err := client.Ping(ctx).Result()
 		return err
 	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to Redis: %w", err)
+	}
 
 	return client, nil
 }

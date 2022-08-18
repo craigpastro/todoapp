@@ -55,10 +55,14 @@ func CreateClient(ctx context.Context, config Config) (*dynamodb.DynamoDB, error
 	}
 
 	client := dynamodb.New(sess)
-	backoff.Retry(func() error {
+
+	err = backoff.Retry(func() error {
 		_, err := client.ListTables(&dynamodb.ListTablesInput{})
 		return err
 	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to DynamoDB: %w", err)
+	}
 
 	return client, nil
 }

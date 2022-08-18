@@ -40,15 +40,17 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 }
 
 func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, error) {
-	errMsg := "unable to connect to MongoDB"
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URL))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", errMsg, err)
+		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
 
-	backoff.Retry(func() error {
+	err = backoff.Retry(func() error {
 		return client.Ping(ctx, readpref.Primary())
 	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
+	}
 
 	return client.Database("db").Collection("posts"), nil
 }
