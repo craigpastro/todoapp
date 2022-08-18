@@ -6,6 +6,7 @@ import (
 	"log"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	ddb "github.com/aws/aws-sdk-go/service/dynamodb"
@@ -260,6 +261,7 @@ func testUpdate(t *testing.T, db storage.Storage) {
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
+	time.Sleep(time.Millisecond) // just in case
 	newData := "new data"
 	_, err = db.Update(ctx, userID, created.PostID, newData)
 	require.NoError(t, err)
