@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"go.mongodb.org/mongo-driver/bson"
@@ -45,9 +46,9 @@ func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, er
 		return nil, fmt.Errorf("%s: %w", errMsg, err)
 	}
 
-	if err := client.Ping(ctx, readpref.Primary()); err != nil {
-		return nil, fmt.Errorf("%s: %w", errMsg, err)
-	}
+	backoff.Retry(func() error {
+		return client.Ping(ctx, readpref.Primary())
+	}, backoff.NewExponentialBackOff())
 
 	return client.Database("db").Collection("posts"), nil
 }

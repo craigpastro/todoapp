@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/go-redis/redis/v8"
@@ -36,9 +37,10 @@ func CreateClient(ctx context.Context, config Config) (*redis.Client, error) {
 		Password: config.Password,
 	})
 
-	if _, err := client.Ping(ctx).Result(); err != nil {
-		return nil, fmt.Errorf("unable to connect to Redis: %w", err)
-	}
+	backoff.Retry(func() error {
+		_, err := client.Ping(ctx).Result()
+		return err
+	}, backoff.NewExponentialBackOff())
 
 	return client, nil
 }
