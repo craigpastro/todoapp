@@ -24,6 +24,7 @@ require (
 	go.uber.org/zap v1.22.0
 	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.1
+	gotest.tools/v3 v3.2.0
 )
 
 require (
@@ -49,6 +50,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
+	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.2 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -101,5 +103,4 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gotest.tools/v3 v3.2.0 // indirect
 )
