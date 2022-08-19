@@ -75,7 +75,7 @@ which just calls
 ```
 curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
   -H 'Content-Type: application/json' \
-  -d '{"userId": "1"}'```
+  -d '{"userId": "1"}'
 ```
 
 ### Update
