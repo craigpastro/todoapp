@@ -35,7 +35,7 @@ create-local-postgres-table:
 	psql postgres://postgres:password@localhost:5432/postgres -c 'CREATE TABLE IF NOT EXISTS post (user_id TEXT NOT NULL, post_id TEXT NOT NULL, data TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, PRIMARY KEY (user_id, post_id));'
 
 .PHONY: run-memory
-run: build
+run-memory: build
 	./bin/crudapp
 
 .PHONY: run-mongodb
@@ -48,30 +48,30 @@ run-postgres: build
 
 .PHONY: create
 create:
-	curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Create \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Create \
 	  -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
 
 .PHONY: read
 read:
-	curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Read \
 	  -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
 
 .PHONY: read-all
 read-all:
-	curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/ReadAll \
 	  -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}"}'
 
 .PHONY: update
 update:
-	curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Update \
       -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
 
 .PHONY: delete
 delete:
-	curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Update \
       -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'

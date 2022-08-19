@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/bufbuild/connect-go"
+	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	cachememory "github.com/craigpastro/crudapp/cache/memory"
@@ -21,6 +22,8 @@ import (
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 )
 
 type Config struct {
@@ -120,17 +123,20 @@ func run(ctx context.Context, config *Config) error {
 	)
 
 	mux := http.NewServeMux()
+	reflector := grpcreflect.NewStaticReflector(crudappv1connect.CrudAppServiceName)
+	mux.Handle(grpcreflect.NewHandlerV1(reflector))
+	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
 		server.NewServer(cache, storage, tracer),
 		interceptors,
 	))
 
 	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Service.Addr, config.Storage.Type))
-	if err := http.ListenAndServe(config.Service.Addr, mux); err != nil {
-		logger.Fatal("failed to listen and serve", telemetry.Error(err))
-	}
 
-	return nil
+	return http.ListenAndServe(
+		":8080",
+		h2c.NewHandler(mux, &http2.Server{}),
+	)
 }
 
 func newCache(ctx context.Context, tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
