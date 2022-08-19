@@ -10,6 +10,7 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	"github.com/craigpastro/crudapp/cache/memory"
+	"github.com/craigpastro/crudapp/cache/redis"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
@@ -79,6 +80,33 @@ func newMemcached(t *testing.T) cacheTest {
 	return cacheTest{
 		name:      "memcached",
 		cache:     memcached.New(client, tracer),
+		container: container,
+	}
+}
+
+func newRedis(t *testing.T) cacheTest {
+	ctx := context.Background()
+	tracer := telemetry.NewNoopTracer()
+
+	req := testcontainers.ContainerRequest{
+		Image:        "redis:latest",
+		ExposedPorts: []string{"6379/tcp"},
+	}
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	require.NoError(t, err)
+
+	port, err := container.MappedPort(ctx, "6379/tcp")
+	require.NoError(t, err)
+
+	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""})
+	require.NoError(t, err)
+
+	return cacheTest{
+		name:      "redis",
+		cache:     redis.New(client, tracer),
 		container: container,
 	}
 }

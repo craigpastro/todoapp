@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var _ storage.Storage = (*Postgres)(nil)
+
 type Postgres struct {
 	pool   *pgxpool.Pool
 	tracer trace.Tracer
@@ -78,7 +80,7 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 	return &record, nil
 }
 
-func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
+func (p *Postgres) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
 	ctx, span := p.tracer.Start(ctx, "postgres.ReadAll")
 	defer span.End()
 
@@ -87,16 +89,23 @@ func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 		return nil, fmt.Errorf("error reading all: %w", err)
 	}
 
-	var res []*storage.Record
-	for rows.Next() {
-		var record storage.Record
-		if err := rows.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("error scanning: %w", err)
-		}
-		res = append(res, &record)
-	}
+	return &recordInterator{rows: rows}, nil
+}
 
-	return res, nil
+type recordInterator struct {
+	rows pgx.Rows
+}
+
+func (i *recordInterator) Next(_ context.Context) bool {
+	return i.rows.Next()
+}
+
+func (i *recordInterator) Get(dest *storage.Record) error {
+	return i.rows.Scan(&dest.UserID, &dest.PostID, &dest.Data, &dest.CreatedAt, &dest.UpdatedAt)
+}
+
+func (i *recordInterator) Close(_ context.Context) {
+	i.rows.Close()
 }
 
 func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {

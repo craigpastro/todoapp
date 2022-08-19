@@ -10,15 +10,14 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/cache/memcached"
 	cachememory "github.com/craigpastro/crudapp/cache/memory"
+	"github.com/craigpastro/crudapp/cache/redis"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/server"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/storage/dynamodb"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
-	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
@@ -45,16 +44,15 @@ type TraceConfig struct {
 
 type StorageConfig struct {
 	Type     string // memory, dynamodb, mongodb, postgres, redis
-	DynamoDB dynamodb.Config
 	MongoDB  mongodb.Config
 	Postgres postgres.Config
-	Redis    redis.Config
 }
 
 type CacheConfig struct {
 	Type      string // memory, memcached
 	Size      int
 	Memcached memcached.Config
+	Redis     redis.Config
 }
 
 func main() {
@@ -112,7 +110,7 @@ func run(ctx context.Context, config *Config) error {
 		logger.Fatal("error initializing storage", telemetry.Error(err))
 	}
 
-	cache, err := newCache(tracer, &config.Cache)
+	cache, err := newCache(ctx, tracer, &config.Cache)
 	if err != nil {
 		logger.Fatal("error initializing cache", telemetry.Error(err))
 	}
@@ -135,7 +133,7 @@ func run(ctx context.Context, config *Config) error {
 	return nil
 }
 
-func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
+func newCache(ctx context.Context, tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 	switch config.Type {
 	case "memcached":
 		client, err := memcached.CreateClient(config.Memcached)
@@ -145,6 +143,12 @@ func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 		return memcached.New(client, tracer), nil
 	case "memory":
 		return cachememory.New(config.Size, tracer)
+	case "redis":
+		client, err := redis.CreateClient(ctx, config.Redis)
+		if err != nil {
+			return nil, err
+		}
+		return redis.New(client, tracer), nil
 	case "noop":
 		return cache.NewNoopCache(), nil
 	default:
@@ -154,12 +158,6 @@ func newCache(tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 
 func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
 	switch config.Type {
-	case "dynamodb":
-		client, err := dynamodb.CreateClient(ctx, config.DynamoDB)
-		if err != nil {
-			return nil, err
-		}
-		return dynamodb.New(client, tracer), nil
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
@@ -174,12 +172,6 @@ func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig)
 			return nil, err
 		}
 		return postgres.New(pool, tracer), nil
-	case "redis":
-		client, err := redis.CreateClient(ctx, config.Redis)
-		if err != nil {
-			return nil, err
-		}
-		return redis.New(client, tracer), nil
 	default:
 		return nil, fmt.Errorf("undefined storage kind: %s", config.Type)
 	}

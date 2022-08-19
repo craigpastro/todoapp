@@ -9,6 +9,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var _ cache.Cache = (*Memory)(nil)
+
 type Memory struct {
 	cache  *lru.Cache
 	tracer trace.Tracer

@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+var _ cache.Cache = (*Memcached)(nil)
+
 type Memcached struct {
 	client *memcache.Client
 	tracer trace.Tracer
