@@ -95,9 +95,9 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	}), nil
 }
 
-func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
+func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest], stream *connect.ServerStream[pb.ReadAllResponse]) error {
 	if err := validate(req.Msg); err != nil {
-		return nil, err
+		return err
 	}
 
 	msg := req.Msg
@@ -108,18 +108,17 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	iter, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
 		telemetry.TraceError(span, err)
-		return nil, errors.HandleStorageError(err)
+		return errors.HandleStorageError(err)
 	}
-	defer iter.Close(ctx)
 
-	var posts []*pb.ReadResponse
 	for iter.Next(ctx) {
 		var record storage.Record
 		if err := iter.Get(&record); err != nil {
 			telemetry.TraceError(span, err)
-			return nil, errors.HandleStorageError(err)
+			return errors.HandleStorageError(err)
 		}
-		posts = append(posts, &pb.ReadResponse{
+
+		stream.Send(&pb.ReadAllResponse{
 			UserId:    record.UserID,
 			PostId:    record.PostID,
 			Data:      record.Data,
@@ -128,7 +127,9 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 		})
 	}
 
-	return connect.NewResponse(&pb.ReadAllResponse{Posts: posts}), nil
+	iter.Close(ctx)
+
+	return nil
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateRequest]) (*connect.Response[pb.UpdateResponse], error) {

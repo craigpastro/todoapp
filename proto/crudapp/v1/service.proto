@@ -10,7 +10,7 @@ service CrudAppService {
 
   rpc Read(ReadRequest) returns (ReadResponse) {}
 
-  rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {}
+  rpc ReadAll(ReadAllRequest) returns (stream ReadAllResponse) {}
 
   rpc Update(UpdateRequest) returns (UpdateResponse) {}
 
@@ -45,7 +45,11 @@ message ReadAllRequest {
 }
 
 message ReadAllResponse {
-  repeated ReadResponse posts = 1;
+  string user_id = 1;
+  string post_id = 2;
+  string data = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message UpdateRequest {
