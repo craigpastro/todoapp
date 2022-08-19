@@ -67,16 +67,17 @@ curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
 
 ### ReadAll
 
+ReadAll is a streaming endpoint.
+
 To get all user 1's posts:
 ```
 make USER_ID=1 read-all
 ```
 which just calls
 ```
-curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
-  -H 'Content-Type: application/json' \
-  -d '{"userId": "1"}'
+grpcurl -plaintext -d '{"userId": "1"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
 ```
+Note this is a grpcurl command. My attempts to get a streaming response with curl aren't working yet.
 
 ### Update
 
@@ -99,7 +100,7 @@ make USER_ID=1 POST_ID=2 delete
 ```
 which just calls
 ```
-curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Delete \
   -H 'Content-Type: application/json' \
   -d '{"userId": "1", "postId": "2"}'
 ```
