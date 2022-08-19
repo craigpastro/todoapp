@@ -23,6 +23,8 @@ const (
 	updatedAtField = "updatedAt"
 )
 
+var _ storage.Storage = (*MongoDB)(nil)
+
 type MongoDB struct {
 	coll   *mongo.Collection
 	tracer trace.Tracer
@@ -86,7 +88,7 @@ func (m *MongoDB) Read(ctx context.Context, userID, postID string) (*storage.Rec
 	return &record, nil
 }
 
-func (m *MongoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
+func (m *MongoDB) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
 	ctx, span := m.tracer.Start(ctx, "mongodb.ReadAll")
 	defer span.End()
 
@@ -95,16 +97,24 @@ func (m *MongoDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record
 		return nil, fmt.Errorf("error reading all: %w", err)
 	}
 
-	res := []*storage.Record{}
-	for cur.Next(ctx) {
-		var record storage.Record
-		if err := cur.Decode(&record); err != nil {
-			return nil, fmt.Errorf("error decoding: %w", err)
-		}
-		res = append(res, &record)
-	}
+	return &recordInterator{cur: cur}, nil
 
-	return res, nil
+}
+
+type recordInterator struct {
+	cur *mongo.Cursor
+}
+
+func (i *recordInterator) Next(ctx context.Context) bool {
+	return i.cur.Next(ctx)
+}
+
+func (i *recordInterator) Get(dest *storage.Record) error {
+	return i.cur.Decode(dest)
+}
+
+func (i *recordInterator) Close(ctx context.Context) {
+	i.cur.Close(ctx)
 }
 
 func (m *MongoDB) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {

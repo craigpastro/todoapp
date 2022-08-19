@@ -4,20 +4,17 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	ddb "github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/storage/dynamodb"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/mongodb"
 	"github.com/craigpastro/crudapp/storage/postgres"
-	"github.com/craigpastro/crudapp/storage/redis"
 	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -33,11 +30,9 @@ type storageTest struct {
 
 func TestStorage(t *testing.T) {
 	storageTests := []storageTest{
-		newDynamoDB(t),
 		newMemory(),
 		newMongoDB(t),
 		newPostgres(t),
-		newRedis(t),
 	}
 
 	for _, test := range storageTests {
@@ -56,66 +51,6 @@ func TestStorage(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func newDynamoDB(t *testing.T) storageTest {
-	ctx := context.Background()
-	tracer := telemetry.NewNoopTracer()
-
-	req := testcontainers.ContainerRequest{
-		Image:        "amazon/dynamodb-local:latest",
-		ExposedPorts: []string{"8000/tcp"},
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-
-	port, err := container.MappedPort(ctx, "8000/tcp")
-	require.NoError(t, err)
-
-	client, err := dynamodb.CreateClient(ctx, dynamodb.Config{Region: "us-west-2", Port: port.Port()})
-	require.NoError(t, err)
-
-	_, err = client.ListTables(&ddb.ListTablesInput{})
-	require.NoError(t, err)
-
-	input := &ddb.CreateTableInput{
-		TableName: aws.String(dynamodb.TableName),
-		AttributeDefinitions: []*ddb.AttributeDefinition{
-			{
-				AttributeName: aws.String(dynamodb.UserIDAttribute),
-				AttributeType: aws.String("S"),
-			},
-			{
-				AttributeName: aws.String(dynamodb.PostIDAttribute),
-				AttributeType: aws.String("S"),
-			},
-		},
-		KeySchema: []*ddb.KeySchemaElement{
-			{
-				AttributeName: aws.String(dynamodb.UserIDAttribute),
-				KeyType:       aws.String("HASH"),
-			},
-			{
-				AttributeName: aws.String(dynamodb.PostIDAttribute),
-				KeyType:       aws.String("RANGE"),
-			},
-		},
-		BillingMode: aws.String("PAY_PER_REQUEST"),
-	}
-	if _, err := client.CreateTableWithContext(ctx, input); err != nil {
-		if !strings.Contains(err.Error(), "Cannot create preexisting table") {
-			log.Fatalf("error creating table: %v\n", err)
-		}
-	}
-
-	return storageTest{
-		name:      "dynamodb",
-		storage:   dynamodb.New(client, tracer),
-		container: container,
 	}
 }
 
@@ -193,33 +128,6 @@ func newPostgres(t *testing.T) storageTest {
 	}
 }
 
-func newRedis(t *testing.T) storageTest {
-	ctx := context.Background()
-	tracer := telemetry.NewNoopTracer()
-
-	req := testcontainers.ContainerRequest{
-		Image:        "redis:latest",
-		ExposedPorts: []string{"6379/tcp"},
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-
-	port, err := container.MappedPort(ctx, "6379/tcp")
-	require.NoError(t, err)
-
-	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""})
-	require.NoError(t, err)
-
-	return storageTest{
-		name:      "redis",
-		storage:   redis.New(client, tracer),
-		container: container,
-	}
-}
-
 func testRead(t *testing.T, storage storage.Storage) {
 	ctx := context.Background()
 	userID := myid.New()
@@ -244,15 +152,29 @@ func testReadNotExists(t *testing.T, db storage.Storage) {
 func testReadAll(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
 	userID := myid.New()
-	_, err := db.Create(ctx, userID, "data 1")
-	require.NoError(t, err)
-	_, err = db.Create(ctx, userID, "data 2")
+
+	rec1, err := db.Create(ctx, userID, "data 1")
 	require.NoError(t, err)
 
-	records, err := db.ReadAll(ctx, userID)
+	rec2, err := db.Create(ctx, userID, "data 2")
 	require.NoError(t, err)
 
-	require.Len(t, records, 2, "got '%d', want '%d'", len(records), 2)
+	iter, err := db.ReadAll(ctx, userID)
+	require.NoError(t, err)
+
+	var record storage.Record
+
+	require.True(t, iter.Next(ctx))
+	require.NoError(t, iter.Get(&record))
+	// Monotonic clock issues: see https://github.com/stretchr/testify/issues/502
+	require.True(t, cmp.Equal(rec1, &record, cmpopts.IgnoreFields(storage.Record{}, "CreatedAt", "UpdatedAt")))
+
+	require.True(t, iter.Next(ctx))
+	require.NoError(t, iter.Get(&record))
+	// Monotonic clock issues: see https://github.com/stretchr/testify/issues/502
+	require.True(t, cmp.Equal(rec2, &record, cmpopts.IgnoreFields(storage.Record{}, "CreatedAt", "UpdatedAt")))
+
+	require.False(t, iter.Next(ctx))
 }
 
 func testUpdate(t *testing.T, db storage.Storage) {

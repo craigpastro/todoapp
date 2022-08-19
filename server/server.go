@@ -105,14 +105,20 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	ctx, span := s.Tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	records, err := s.Storage.ReadAll(ctx, userID)
+	iter, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
+	defer iter.Close(ctx)
 
-	posts := []*pb.ReadResponse{}
-	for _, record := range records {
+	var posts []*pb.ReadResponse
+	for iter.Next(ctx) {
+		var record storage.Record
+		if err := iter.Get(&record); err != nil {
+			telemetry.TraceError(span, err)
+			return nil, errors.HandleStorageError(err)
+		}
 		posts = append(posts, &pb.ReadResponse{
 			UserId:    record.UserID,
 			PostId:    record.PostID,

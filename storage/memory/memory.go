@@ -2,12 +2,15 @@ package memory
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"go.opentelemetry.io/otel/trace"
 )
+
+var _ storage.Storage = (*MemoryDB)(nil)
 
 type MemoryDB struct {
 	store  map[string]map[string]*storage.Record
@@ -49,7 +52,7 @@ func (m *MemoryDB) Read(ctx context.Context, userID, postID string) (*storage.Re
 	return record, nil
 }
 
-func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Record, error) {
+func (m *MemoryDB) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
 	_, span := m.tracer.Start(ctx, "memory.ReadAll")
 	defer span.End()
 
@@ -59,7 +62,29 @@ func (m *MemoryDB) ReadAll(ctx context.Context, userID string) ([]*storage.Recor
 		res = append(res, record)
 	}
 
-	return res, nil
+	return &recordInterator{records: res}, nil
+}
+
+type recordInterator struct {
+	records []*storage.Record
+}
+
+func (i *recordInterator) Next(_ context.Context) bool {
+	return len(i.records) > 0
+}
+
+func (i *recordInterator) Get(dest *storage.Record) error {
+	if len(i.records) == 0 {
+		return errors.New("no more records")
+	}
+
+	*dest = *i.records[0]
+	i.records = i.records[1:]
+	return nil
+}
+
+func (i *recordInterator) Close(_ context.Context) {
+	i.records = nil
 }
 
 func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {

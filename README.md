@@ -8,8 +8,8 @@ A simple CRUD app to demonstrate concepts.
 - Implement preshared key auth
 - Do streaming with read all
 - Add health check
-- Cut back on storage implementations. Dyanamo is kind of annoying.
 - Add migrate command
+- Implement Redis cache
 
 And, of course, I welcome suggestions.
 
@@ -17,18 +17,16 @@ And, of course, I welcome suggestions.
 
 Depending on the storage type you want, run one of the following commands.
 ```
-make run  # defaults to memory
-make run-dynamodb
+make run-memory
 make run-mongodb
 make run-postgres
-make run-redis
 ```
 
 You may need the appropriate storage running. If you want to use a container for this purpose you can
 ```
 docker compose up STORAGE_TYPE -d
 ```
-For `dynamodb` and `postgres` the the tables will need to be created first; you can `create-local-dynamodb-table` or `create-local-postgres-table` respectively for this purpose. You will need to have `psql` or the aws cli installed.
+For `postgres` the tables will need to be created first; you can `make create-local-postgres-table` for this purpose. You will need to have `psql`.
 
 If everything works properly the service should be listening on `127.0.0.1:8080`.
 
