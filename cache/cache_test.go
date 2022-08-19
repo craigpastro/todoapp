@@ -14,6 +14,8 @@ import (
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 )
@@ -122,11 +124,8 @@ func testGet(t *testing.T, cache cache.Cache) {
 	gotRecord, ok := cache.Get(ctx, userID, postID)
 	require.True(t, ok)
 
-	require.Equal(t, record.UserID, gotRecord.UserID)
-	require.Equal(t, record.PostID, gotRecord.PostID)
-	require.Equal(t, record.Data, gotRecord.Data)
-	require.True(t, record.CreatedAt.Equal(gotRecord.CreatedAt))
-	require.True(t, record.UpdatedAt.Equal(gotRecord.UpdatedAt))
+	// Monotonic clock issues: see https://github.com/stretchr/testify/issues/502
+	require.True(t, cmp.Equal(record, gotRecord, cmpopts.IgnoreFields(storage.Record{}, "CreatedAt", "UpdatedAt")))
 }
 
 func testRemove(t *testing.T, cache cache.Cache) {
