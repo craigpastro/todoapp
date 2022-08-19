@@ -1,7 +1,7 @@
 package myid
 
-import "github.com/segmentio/ksuid"
+import "github.com/oklog/ulid/v2"
 
 func New() string {
-	return ksuid.New().String()
+	return ulid.Make().String()
 }

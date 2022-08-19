@@ -2,7 +2,7 @@ service:
   name: crudapp
   version: 0.1.0
   environment: dev
-  addr: 127.0.0.1:8080
+  addr: localhost:8080
 
 trace:
   enabled: false
@@ -19,7 +19,7 @@ storage:
     url: postgres://postgres:password@127.0.0.1:5432/postgres
   redis:
     addr: localhost:6379
-    password: 
+    password:
 
 cache:
   type: memory
