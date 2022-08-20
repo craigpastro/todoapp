@@ -32,6 +32,7 @@ func TestCache(t *testing.T) {
 	cacheTests := []cacheTest{
 		newMemcached(t),
 		newMemory(t),
+		newRedis(t),
 	}
 
 	for _, test := range cacheTests {
@@ -62,6 +63,7 @@ func newMemory(t *testing.T) cacheTest {
 func newMemcached(t *testing.T) cacheTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
+	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
 
 	req := testcontainers.ContainerRequest{
 		Image:        "memcached:latest",
@@ -76,7 +78,7 @@ func newMemcached(t *testing.T) cacheTest {
 	port, err := container.MappedPort(ctx, "11211/tcp")
 	require.NoError(t, err)
 
-	client, err := memcached.CreateClient(memcached.Config{Servers: fmt.Sprintf("localhost:%s", port.Port())})
+	client, err := memcached.CreateClient(memcached.Config{Servers: fmt.Sprintf("localhost:%s", port.Port())}, logger)
 	require.NoError(t, err)
 
 	return cacheTest{
@@ -89,6 +91,7 @@ func newMemcached(t *testing.T) cacheTest {
 func newRedis(t *testing.T) cacheTest {
 	ctx := context.Background()
 	tracer := telemetry.NewNoopTracer()
+	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
 
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:latest",
@@ -103,7 +106,7 @@ func newRedis(t *testing.T) cacheTest {
 	port, err := container.MappedPort(ctx, "6379/tcp")
 	require.NoError(t, err)
 
-	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""})
+	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""}, logger)
 	require.NoError(t, err)
 
 	return cacheTest{
