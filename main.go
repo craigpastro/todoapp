@@ -113,7 +113,7 @@ func run(ctx context.Context, config *Config) error {
 		logger.Fatal("error initializing storage", telemetry.Error(err))
 	}
 
-	cache, err := newCache(ctx, tracer, &config.Cache)
+	cache, err := newCache(ctx, logger, tracer, &config.Cache)
 	if err != nil {
 		logger.Fatal("error initializing cache", telemetry.Error(err))
 	}
@@ -139,10 +139,10 @@ func run(ctx context.Context, config *Config) error {
 	)
 }
 
-func newCache(ctx context.Context, tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
+func newCache(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
 	switch config.Type {
 	case "memcached":
-		client, err := memcached.CreateClient(config.Memcached)
+		client, err := memcached.CreateClient(config.Memcached, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func newCache(ctx context.Context, tracer trace.Tracer, config *CacheConfig) (ca
 	case "memory":
 		return cachememory.New(config.Size, tracer)
 	case "redis":
-		client, err := redis.CreateClient(ctx, config.Redis)
+		client, err := redis.CreateClient(ctx, config.Redis, logger)
 		if err != nil {
 			return nil, err
 		}
