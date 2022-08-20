@@ -6,10 +6,10 @@ A simple CRUD app to demonstrate concepts.
 
 - Switch back to env vars only. go-envconfig looks fine.
 - Implement preshared key auth
-- Do streaming with read all
 - Add health check
 - Add migrate command
 - Implement Redis cache
+- Add develop logging
 
 And, of course, I welcome suggestions.
 
@@ -28,7 +28,7 @@ docker compose up STORAGE_TYPE -d
 ```
 For `postgres` the tables will need to be created first; you can `make create-local-postgres-table` for this purpose. You will need to have `psql`.
 
-If everything works properly the service should be listening on `127.0.0.1:8080`.
+If everything works properly the service should be listening on `localhost:8080`.
 
 ## Tests
 

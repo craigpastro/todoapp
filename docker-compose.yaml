@@ -1,17 +1,17 @@
 version: "3"
 services:
-  dynamodb:
-    image: amazon/dynamodb-local:latest
-    ports:
-      - "8000:8000"
-  
   memcached:
     image: memcached:latest
     ports:
       - "11211:11211"
     
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+
   mongodb:
-    image: mongo:4.4.11
+    image: mongo:latest
     ports:
       - "27017:27017"
     environment:
@@ -19,17 +19,12 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=password
 
   postgres:
-    image: postgres:14.1
+    image: postgres:latest
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-
-  redis:
-    image: redis:6.2
-    ports:
-      - "6379:6379"
 
   otel-collector:
     image: otel/opentelemetry-collector:latest
@@ -42,7 +37,7 @@ services:
       - "55679:55679"  # zpages extension
       - "4317:4317"
     volumes:
-      - "${PWD}/instrumentation/otel-config.yaml:/etc/otel-local-config.yaml"
+      - "${PWD}/telemetry/otel-config.yaml:/etc/otel-local-config.yaml"
     depends_on:
       - zipkin
       - jaeger
