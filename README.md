@@ -4,12 +4,11 @@ A simple CRUD app to demonstrate concepts.
 
 ## Things to do
 
+- Add develop logging
 - Switch back to env vars only. go-envconfig looks fine.
 - Implement preshared key auth
-- Do streaming with read all
 - Add health check
 - Add migrate command
-- Implement Redis cache
 
 And, of course, I welcome suggestions.
 
@@ -22,13 +21,13 @@ make run-mongodb
 make run-postgres
 ```
 
-You may need the appropriate storage running. If you want to use a container for this purpose you can
+You will need the appropriate storage running. If you want to use a container for this purpose you can
 ```
 docker compose up STORAGE_TYPE -d
 ```
 For `postgres` the tables will need to be created first; you can `make create-local-postgres-table` for this purpose. You will need to have `psql`.
 
-If everything works properly the service should be listening on `127.0.0.1:8080`.
+If everything works properly the service should be listening on `localhost:8080`.
 
 ## Tests
 
@@ -67,16 +66,17 @@ curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Read \
 
 ### ReadAll
 
+ReadAll is a streaming endpoint.
+
 To get all user 1's posts:
 ```
 make USER_ID=1 read-all
 ```
 which just calls
 ```
-curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/ReadAll \
-  -H 'Content-Type: application/json' \
-  -d '{"userId": "1"}'
+grpcurl -plaintext -d '{"userId": "1"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
 ```
+Note this is a grpcurl command. My attempts to get a streaming response with curl aren't working yet.
 
 ### Update
 
@@ -99,7 +99,7 @@ make USER_ID=1 POST_ID=2 delete
 ```
 which just calls
 ```
-curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Delete \
   -H 'Content-Type: application/json' \
   -d '{"userId": "1", "postId": "2"}'
 ```

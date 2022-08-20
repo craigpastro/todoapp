@@ -108,14 +108,14 @@ func run(ctx context.Context, config *Config) error {
 		logger.Fatal("error initializing tracer", telemetry.Error(err))
 	}
 
-	storage, err := newStorage(ctx, tracer, &config.Storage)
-	if err != nil {
-		logger.Fatal("error initializing storage", telemetry.Error(err))
-	}
-
 	cache, err := newCache(ctx, logger, tracer, &config.Cache)
 	if err != nil {
 		logger.Fatal("error initializing cache", telemetry.Error(err))
+	}
+
+	storage, err := newStorage(ctx, logger, tracer, &config.Storage)
+	if err != nil {
+		logger.Fatal("error initializing storage", telemetry.Error(err))
 	}
 
 	interceptors := connect.WithInterceptors(
@@ -162,18 +162,18 @@ func newCache(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer,
 	}
 }
 
-func newStorage(ctx context.Context, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
+func newStorage(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
 	switch config.Type {
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
-		coll, err := mongodb.CreateCollection(ctx, config.MongoDB)
+		coll, err := mongodb.CreateCollection(ctx, config.MongoDB, logger)
 		if err != nil {
 			return nil, err
 		}
 		return mongodb.New(coll, tracer), nil
 	case "postgres":
-		pool, err := postgres.CreatePool(ctx, config.Postgres)
+		pool, err := postgres.CreatePool(ctx, config.Postgres, logger)
 		if err != nil {
 			return nil, err
 		}

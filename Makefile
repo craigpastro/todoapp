@@ -60,9 +60,7 @@ read:
 
 .PHONY: read-all
 read-all:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/ReadAll \
-	  -H 'Content-Type: application/json' \
-      -d '{"userId": "${USER_ID}"}'
+	grpcurl -plaintext -d '{"userId": "${USER_ID}"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
 
 .PHONY: update
 update:
@@ -72,6 +70,6 @@ update:
 
 .PHONY: delete
 delete:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Update \
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Delete \
       -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'

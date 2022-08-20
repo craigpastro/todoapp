@@ -9,6 +9,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.opentelemetry.io/otel/trace"
@@ -32,12 +33,16 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 	}
 }
 
-func CreatePool(ctx context.Context, config Config) (*pgxpool.Pool, error) {
+func CreatePool(ctx context.Context, config Config, logger telemetry.Logger) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	err := backoff.Retry(func() error {
 		var err error
 		pool, err = pgxpool.Connect(ctx, config.URL)
-		return err
+		if err != nil {
+			logger.Info("waiting for Postgres")
+			return err
+		}
+		return nil
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to Postgres: %w", err)

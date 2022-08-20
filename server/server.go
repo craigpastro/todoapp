@@ -43,11 +43,11 @@ func validate[T validator](msg T) error {
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	ctx, span := s.Tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
@@ -65,11 +65,11 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 }
 
 func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest]) (*connect.Response[pb.ReadResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -95,12 +95,12 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	}), nil
 }
 
-func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
-	if err := validate(req.Msg); err != nil {
-		return nil, err
+func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest], stream *connect.ServerStream[pb.ReadAllResponse]) error {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
+		return err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	ctx, span := s.Tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
@@ -108,35 +108,39 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	iter, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
 		telemetry.TraceError(span, err)
-		return nil, errors.HandleStorageError(err)
+		return errors.HandleStorageError(err)
 	}
-	defer iter.Close(ctx)
 
-	var posts []*pb.ReadResponse
 	for iter.Next(ctx) {
 		var record storage.Record
 		if err := iter.Get(&record); err != nil {
 			telemetry.TraceError(span, err)
-			return nil, errors.HandleStorageError(err)
+			return errors.HandleStorageError(err)
 		}
-		posts = append(posts, &pb.ReadResponse{
+
+		err = stream.Send(&pb.ReadAllResponse{
 			UserId:    record.UserID,
 			PostId:    record.PostID,
 			Data:      record.Data,
 			CreatedAt: timestamppb.New(record.CreatedAt),
 			UpdatedAt: timestamppb.New(record.UpdatedAt),
 		})
+		if err != nil {
+			return err
+		}
 	}
 
-	return connect.NewResponse(&pb.ReadAllResponse{Posts: posts}), nil
+	iter.Close(ctx)
+
+	return nil
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateRequest]) (*connect.Response[pb.UpdateResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -156,11 +160,11 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))

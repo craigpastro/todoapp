@@ -63,6 +63,7 @@ func newMemory() storageTest {
 
 func newMongoDB(t *testing.T) storageTest {
 	ctx := context.Background()
+	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -79,7 +80,7 @@ func newMongoDB(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "27017/tcp")
 	require.NoError(t, err)
 
-	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URL: fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port())})
+	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URL: fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port())}, logger)
 	require.NoError(t, err)
 
 	return storageTest{
@@ -91,6 +92,7 @@ func newMongoDB(t *testing.T) storageTest {
 
 func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
+	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -108,7 +110,7 @@ func newPostgres(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "5432/tcp")
 	require.NoError(t, err)
 
-	pool, err := postgres.CreatePool(ctx, postgres.Config{URL: fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())})
+	pool, err := postgres.CreatePool(ctx, postgres.Config{URL: fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())}, logger)
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
