@@ -43,11 +43,11 @@ func validate[T validator](msg T) error {
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	ctx, span := s.Tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
@@ -65,11 +65,11 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 }
 
 func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest]) (*connect.Response[pb.ReadResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -96,11 +96,11 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 }
 
 func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest], stream *connect.ServerStream[pb.ReadAllResponse]) error {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	ctx, span := s.Tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
@@ -133,11 +133,11 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 }
 
 func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateRequest]) (*connect.Response[pb.UpdateResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -157,11 +157,11 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
-	if err := validate(req.Msg); err != nil {
+	msg := req.Msg
+	if err := validate(msg); err != nil {
 		return nil, err
 	}
 
-	msg := req.Msg
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
