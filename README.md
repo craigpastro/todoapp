@@ -4,12 +4,11 @@ A simple CRUD app to demonstrate concepts.
 
 ## Things to do
 
+- Add develop logging
 - Switch back to env vars only. go-envconfig looks fine.
 - Implement preshared key auth
 - Add health check
 - Add migrate command
-- Implement Redis cache
-- Add develop logging
 
 And, of course, I welcome suggestions.
 
@@ -22,7 +21,7 @@ make run-mongodb
 make run-postgres
 ```
 
-You may need the appropriate storage running. If you want to use a container for this purpose you can
+You will need the appropriate storage running. If you want to use a container for this purpose you can
 ```
 docker compose up STORAGE_TYPE -d
 ```

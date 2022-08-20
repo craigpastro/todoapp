@@ -62,8 +62,8 @@ func newMemory(t *testing.T) cacheTest {
 
 func newMemcached(t *testing.T) cacheTest {
 	ctx := context.Background()
-	tracer := telemetry.NewNoopTracer()
 	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "memcached:latest",
@@ -90,8 +90,8 @@ func newMemcached(t *testing.T) cacheTest {
 
 func newRedis(t *testing.T) cacheTest {
 	ctx := context.Background()
-	tracer := telemetry.NewNoopTracer()
 	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "redis:latest",

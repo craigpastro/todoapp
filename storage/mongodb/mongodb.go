@@ -9,6 +9,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -41,14 +42,19 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 	}
 }
 
-func CreateCollection(ctx context.Context, config Config) (*mongo.Collection, error) {
+func CreateCollection(ctx context.Context, config Config, logger telemetry.Logger) (*mongo.Collection, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URL))
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
 	}
 
 	err = backoff.Retry(func() error {
-		return client.Ping(ctx, readpref.Primary())
+		err := client.Ping(ctx, readpref.Primary())
+		if err != nil {
+			logger.Info("waiting for MongoDB")
+			return err
+		}
+		return nil
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
