@@ -118,13 +118,16 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 			return errors.HandleStorageError(err)
 		}
 
-		stream.Send(&pb.ReadAllResponse{
+		err = stream.Send(&pb.ReadAllResponse{
 			UserId:    record.UserID,
 			PostId:    record.PostID,
 			Data:      record.Data,
 			CreatedAt: timestamppb.New(record.CreatedAt),
 			UpdatedAt: timestamppb.New(record.UpdatedAt),
 		})
+		if err != nil {
+			return err
+		}
 	}
 
 	iter.Close(ctx)
