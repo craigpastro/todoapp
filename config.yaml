@@ -10,20 +10,20 @@ trace:
 
 storage:
   type: memory
-  dynamodb:
-    region: us-west-2
-    local: false
+
   mongodb:
     url: mongodb://mongodb:password@127.0.0.1:27017
+
   postgres:
     url: postgres://postgres:password@127.0.0.1:5432/postgres
-  redis:
-    addr: localhost:6379
-    password:
 
 cache:
-  type: memory
+  type: redis
   size: 10000
 
   memcached:
     servers: localhost:11211
+
+  redis:
+    addr: localhost:6379
+    password:

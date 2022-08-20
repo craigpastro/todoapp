@@ -10,6 +10,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/telemetry"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -31,11 +32,16 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 	}
 }
 
-func CreateClient(config Config) (*memcache.Client, error) {
+func CreateClient(config Config, logger telemetry.Logger) (*memcache.Client, error) {
 	client := memcache.New(strings.Split(config.Servers, ",")...)
 
 	err := backoff.Retry(func() error {
-		return client.Ping()
+		err := client.Ping()
+		if err != nil {
+			logger.Info("waiting for Memcached")
+			return err
+		}
+		return nil
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to Memcached: %w", err)

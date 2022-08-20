@@ -25,6 +25,13 @@ func NewLogger(config LoggerConfig) (Logger, error) {
 	)
 }
 
+func Must(logger Logger, err error) Logger {
+	if err != nil {
+		panic(err)
+	}
+	return logger
+}
+
 func Any(k string, v any) zap.Field {
 	return zap.Any(k, v)
 }
