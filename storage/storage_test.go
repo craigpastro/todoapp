@@ -37,8 +37,6 @@ func TestStorage(t *testing.T) {
 
 	for _, test := range storageTests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-
 			testRead(t, test.storage)
 			testReadNotExists(t, test.storage)
 			testReadAll(t, test.storage)
