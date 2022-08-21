@@ -83,7 +83,7 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 			telemetry.TraceError(span, err)
 			return nil, errors.HandleStorageError(err)
 		}
-		s.Cache.Add(ctx, userID, postID, record)
+		_ = s.Cache.Add(ctx, userID, postID, record)
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{

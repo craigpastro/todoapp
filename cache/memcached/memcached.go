@@ -50,16 +50,16 @@ func CreateClient(config Config, logger telemetry.Logger) (*memcache.Client, err
 	return client, nil
 }
 
-func (m *Memcached) Add(ctx context.Context, userID, postID string, record *storage.Record) {
+func (m *Memcached) Add(ctx context.Context, userID, postID string, record *storage.Record) error {
 	_, span := m.tracer.Start(ctx, "memcached.Add")
 	defer span.End()
 
 	b, err := json.Marshal(record)
 	if err != nil {
-		return
+		return err
 	}
 
-	_ = m.client.Set(&memcache.Item{
+	return m.client.Set(&memcache.Item{
 		Key:   cache.CreateKey(userID, postID),
 		Value: b,
 	})
@@ -82,9 +82,9 @@ func (m *Memcached) Get(ctx context.Context, userID, postID string) (*storage.Re
 	return &record, true
 }
 
-func (m *Memcached) Remove(ctx context.Context, userID, postID string) {
+func (m *Memcached) Remove(ctx context.Context, userID, postID string) error {
 	_, span := m.tracer.Start(ctx, "memcached.Remove")
 	defer span.End()
 
-	_ = m.client.Delete(cache.CreateKey(userID, postID))
+	return m.client.Delete(cache.CreateKey(userID, postID))
 }
