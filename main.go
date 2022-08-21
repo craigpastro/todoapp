@@ -46,13 +46,13 @@ type TraceConfig struct {
 }
 
 type StorageConfig struct {
-	Type     string // memory, dynamodb, mongodb, postgres, redis
+	Type     string // memory, mongodb, postgres
 	MongoDB  mongodb.Config
 	Postgres postgres.Config
 }
 
 type CacheConfig struct {
-	Type      string // memory, memcached
+	Type      string // memory, memcached, redis
 	Size      int
 	Memcached memcached.Config
 	Redis     redis.Config

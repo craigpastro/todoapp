@@ -123,7 +123,9 @@ func testGet(t *testing.T, cache cache.Cache) {
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 
-	cache.Add(ctx, userID, postID, record)
+	err := cache.Add(ctx, userID, postID, record)
+	require.NoError(t, err)
+
 	gotRecord, ok := cache.Get(ctx, userID, postID)
 	require.True(t, ok)
 
@@ -138,11 +140,15 @@ func testRemove(t *testing.T, cache cache.Cache) {
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 
-	cache.Add(ctx, userID, postID, record)
+	err := cache.Add(ctx, userID, postID, record)
+	require.NoError(t, err)
+
 	_, ok := cache.Get(ctx, userID, postID)
 	require.True(t, ok)
 
-	cache.Remove(ctx, userID, postID)
+	err = cache.Remove(ctx, userID, postID)
+	require.NoError(t, err)
+
 	_, ok = cache.Get(ctx, userID, postID)
 	require.False(t, ok)
 }
