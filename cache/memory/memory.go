@@ -27,11 +27,13 @@ func New(size int, tracer trace.Tracer) (*Memory, error) {
 	}, nil
 }
 
-func (m *Memory) Add(ctx context.Context, userID, postID string, record *storage.Record) {
+func (m *Memory) Add(ctx context.Context, userID, postID string, record *storage.Record) error {
 	_, span := m.tracer.Start(ctx, "memory.Add")
 	defer span.End()
 
 	m.cache.Add(cache.CreateKey(userID, postID), record)
+
+	return nil
 }
 
 func (m *Memory) Get(ctx context.Context, userID, postID string) (*storage.Record, bool) {
@@ -46,9 +48,11 @@ func (m *Memory) Get(ctx context.Context, userID, postID string) (*storage.Recor
 	return value.(*storage.Record), true
 }
 
-func (m *Memory) Remove(ctx context.Context, userID, postID string) {
+func (m *Memory) Remove(ctx context.Context, userID, postID string) error {
 	_, span := m.tracer.Start(ctx, "memory.Remove")
 	defer span.End()
 
 	m.cache.Remove(cache.CreateKey(userID, postID))
+
+	return nil
 }

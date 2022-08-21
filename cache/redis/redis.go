@@ -53,38 +53,44 @@ func CreateClient(ctx context.Context, config Config, logger telemetry.Logger) (
 	return client, nil
 }
 
-func (r *Redis) Add(ctx context.Context, userID, postID string, record *storage.Record) {
+func (r *Redis) Add(ctx context.Context, userID, postID string, record *storage.Record) error {
 	_, span := r.tracer.Start(ctx, "redis.Add")
 	defer span.End()
 
 	b, err := json.Marshal(record)
 	if err != nil {
-		return
+		return err
 	}
 
-	r.client.HSet(ctx, userID, postID, string(b)).Val()
+	_, err = r.client.Set(ctx, cache.CreateKey(userID, postID), b, 0).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (r *Redis) Get(ctx context.Context, userID, postID string) (*storage.Record, bool) {
 	_, span := r.tracer.Start(ctx, "redis.Get")
 	defer span.End()
 
-	item, err := r.client.HGet(ctx, userID, postID).Result()
+	s, err := r.client.Get(ctx, cache.CreateKey(userID, postID)).Result()
 	if err != nil {
 		return nil, false
 	}
 
 	var record storage.Record
-	if err := json.Unmarshal([]byte(item), &record); err != nil {
+	if err := json.Unmarshal([]byte(s), &record); err != nil {
 		return nil, false
 	}
 
 	return &record, true
 }
 
-func (r *Redis) Remove(ctx context.Context, userID, postID string) {
+func (r *Redis) Remove(ctx context.Context, userID, postID string) error {
 	_, span := r.tracer.Start(ctx, "redis.Remove")
 	defer span.End()
 
-	r.client.HDel(ctx, userID, postID)
+	_, err := r.client.Del(ctx, cache.CreateKey(userID, postID)).Result()
+	return err
 }

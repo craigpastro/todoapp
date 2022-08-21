@@ -83,7 +83,7 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 			telemetry.TraceError(span, err)
 			return nil, errors.HandleStorageError(err)
 		}
-		s.Cache.Add(ctx, userID, postID, record)
+		_ = s.Cache.Add(ctx, userID, postID, record)
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
@@ -146,12 +146,15 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
+	if err := s.Cache.Remove(ctx, userID, postID); err != nil {
+		return nil, err
+	}
+
 	updatedAt, err := s.Storage.Update(ctx, userID, postID, msg.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
-	s.Cache.Remove(ctx, userID, postID)
 
 	return connect.NewResponse(&pb.UpdateResponse{
 		PostId:    msg.PostId,
@@ -170,11 +173,14 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteReque
 	ctx, span := s.Tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
+	if err := s.Cache.Remove(ctx, userID, postID); err != nil {
+		return nil, err
+	}
+
 	if err := s.Storage.Delete(ctx, userID, postID); err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
-	s.Cache.Remove(ctx, userID, postID)
 
 	return connect.NewResponse(&pb.DeleteResponse{}), nil
 }
