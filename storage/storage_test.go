@@ -81,7 +81,7 @@ func newMongoDB(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "27017/tcp")
 	require.NoError(t, err)
 
-	coll, err := mongodb.CreateCollection(ctx, mongodb.Config{URL: fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port())}, logger)
+	coll, err := mongodb.CreateCollection(ctx, fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port()), logger)
 	require.NoError(t, err)
 
 	return storageTest{
@@ -111,7 +111,7 @@ func newPostgres(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "5432/tcp")
 	require.NoError(t, err)
 
-	pool, err := postgres.CreatePool(ctx, postgres.Config{URL: fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())}, logger)
+	pool, err := postgres.CreatePool(ctx, fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port()), logger)
 	require.NoError(t, err)
 
 	_, err = pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
