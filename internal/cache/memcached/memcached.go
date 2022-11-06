@@ -8,8 +8,8 @@ import (
 
 	"github.com/bradfitz/gomemcache/memcache"
 	"github.com/cenkalti/backoff/v4"
-	"github.com/craigpastro/crudapp/cache"
-	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/internal/cache"
+	"github.com/craigpastro/crudapp/internal/storage"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )

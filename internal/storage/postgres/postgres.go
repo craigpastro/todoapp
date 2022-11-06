@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/oklog/ulid/v2"

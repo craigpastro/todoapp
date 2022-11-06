@@ -3,7 +3,7 @@ package errors
 import (
 	"errors"
 
-	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/internal/storage"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

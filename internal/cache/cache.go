@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/internal/storage"
 )
 
 type Cache interface {
