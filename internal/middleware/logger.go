@@ -2,20 +2,32 @@ package middleware
 
 import (
 	"context"
+	"time"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/craigpastro/crudapp/telemetry"
+	"go.uber.org/zap"
 )
 
-func NewLoggingInterceptor(logger telemetry.Logger) connect.UnaryInterceptorFunc {
+func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
 	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
 		return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+			start := time.Now()
+
 			res, err := next(ctx, req)
+
+			fields := []zap.Field{
+				zap.String("procedure", req.Spec().Procedure),
+				zap.Duration("took", time.Since(start)),
+				zap.Any("req", req.Any()),
+				zap.Any("res", res.Any()),
+			}
 			if err != nil {
+				fields = append(fields, zap.Error(err))
+				logger.Error("res", fields...)
 				return nil, err
 			}
 
-			logger.Info("res", telemetry.String("procedure", req.Spec().Procedure), telemetry.Any("req", req.Any()), telemetry.Any("res", res.Any()))
+			logger.Info("res", fields...)
 
 			return res, nil
 		})

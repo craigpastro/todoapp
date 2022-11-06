@@ -11,13 +11,14 @@ import (
 	"github.com/craigpastro/crudapp/cache/memcached"
 	"github.com/craigpastro/crudapp/cache/memory"
 	"github.com/craigpastro/crudapp/cache/redis"
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
+	"go.uber.org/zap"
 )
 
 type cacheTest struct {
@@ -62,7 +63,7 @@ func newMemory(t *testing.T) cacheTest {
 
 func newMemcached(t *testing.T) cacheTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -90,7 +91,7 @@ func newMemcached(t *testing.T) cacheTest {
 
 func newRedis(t *testing.T) cacheTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -118,8 +119,8 @@ func newRedis(t *testing.T) cacheTest {
 
 func testGet(t *testing.T, cache cache.Cache) {
 	ctx := context.Background()
-	userID := myid.New()
-	postID := myid.New()
+	userID := ulid.Make().String()
+	postID := ulid.Make().String()
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 
@@ -135,8 +136,8 @@ func testGet(t *testing.T, cache cache.Cache) {
 
 func testRemove(t *testing.T, cache cache.Cache) {
 	ctx := context.Background()
-	userID := myid.New()
-	postID := myid.New()
+	userID := ulid.Make().String()
+	postID := ulid.Make().String()
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 

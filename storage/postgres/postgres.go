@@ -7,12 +7,12 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var _ storage.Storage = (*Postgres)(nil)
@@ -33,7 +33,7 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 	}
 }
 
-func CreatePool(ctx context.Context, config Config, logger telemetry.Logger) (*pgxpool.Pool, error) {
+func CreatePool(ctx context.Context, config Config, logger *zap.Logger) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
 	err := backoff.Retry(func() error {
 		var err error
@@ -55,7 +55,7 @@ func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Re
 	ctx, span := p.tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
-	postID := myid.New()
+	postID := ulid.Make().String()
 	now := time.Now()
 	if _, err := p.pool.Exec(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now); err != nil {
 		return nil, fmt.Errorf("error creating: %w", err)

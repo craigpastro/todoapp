@@ -12,9 +12,9 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +54,7 @@ func TestAPI(t *testing.T) {
 
 	t.Run("read", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
@@ -74,7 +74,7 @@ func TestAPI(t *testing.T) {
 
 	t.Run("update", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
@@ -100,7 +100,7 @@ func TestAPI(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)

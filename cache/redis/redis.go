@@ -8,9 +8,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/go-redis/redis/v8"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var _ cache.Cache = (*Redis)(nil)
@@ -32,7 +32,7 @@ func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	}
 }
 
-func CreateClient(ctx context.Context, config Config, logger telemetry.Logger) (*redis.Client, error) {
+func CreateClient(ctx context.Context, config Config, logger *zap.Logger) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     config.Addr,
 		Password: config.Password,

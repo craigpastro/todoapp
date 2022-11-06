@@ -7,14 +7,14 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/oklog/ulid/v2"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 const (
@@ -42,7 +42,7 @@ func New(coll *mongo.Collection, tracer trace.Tracer) *MongoDB {
 	}
 }
 
-func CreateCollection(ctx context.Context, config Config, logger telemetry.Logger) (*mongo.Collection, error) {
+func CreateCollection(ctx context.Context, config Config, logger *zap.Logger) (*mongo.Collection, error) {
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.URL))
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to MongoDB: %w", err)
@@ -67,7 +67,7 @@ func (m *MongoDB) Create(ctx context.Context, userID, data string) (*storage.Rec
 	ctx, span := m.tracer.Start(ctx, "mongodb.Create")
 	defer span.End()
 
-	postID := myid.New()
+	postID := ulid.Make().String()
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 	_, err := m.coll.InsertOne(ctx, record)

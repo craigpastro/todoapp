@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
+	"github.com/oklog/ulid/v2"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -32,7 +32,7 @@ func (m *MemoryDB) Create(ctx context.Context, userID, data string) (*storage.Re
 		m.store[userID] = map[string]*storage.Record{}
 	}
 
-	postID := myid.New()
+	postID := ulid.Make().String()
 	now := time.Now()
 	record := storage.NewRecord(userID, postID, data, now, now)
 	m.store[userID][postID] = record

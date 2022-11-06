@@ -4,6 +4,8 @@ service:
   environment: dev
   addr: localhost:8080
 
+logFormat: console
+
 trace:
   enabled: false
   providerURL: localhost:4317
@@ -18,7 +20,7 @@ storage:
     url: postgres://postgres:password@127.0.0.1:5432/postgres
 
 cache:
-  type: redis
+  type: noop
   size: 10000
 
   memcached:
