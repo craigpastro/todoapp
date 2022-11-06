@@ -18,6 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 )
 
 const data = "some data"
@@ -63,7 +64,7 @@ func newMemory() storageTest {
 
 func newMongoDB(t *testing.T) storageTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -92,7 +93,7 @@ func newMongoDB(t *testing.T) storageTest {
 
 func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
