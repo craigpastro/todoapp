@@ -22,15 +22,18 @@ import (
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/spf13/viper"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
 
 type Config struct {
-	Service ServiceConfig
-	Trace   TraceConfig
-	Storage StorageConfig
-	Cache   CacheConfig
+	Service   ServiceConfig
+	LogFormat string
+	Trace     TraceConfig
+	Storage   StorageConfig
+	Cache     CacheConfig
 }
 
 type ServiceConfig struct {
@@ -59,7 +62,7 @@ type CacheConfig struct {
 }
 
 func main() {
-	config, err := readConfig()
+	cfg, err := readConfig()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -68,7 +71,7 @@ func main() {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	if err := run(ctx, config); err != nil {
+	if err := run(ctx, cfg); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -87,35 +90,28 @@ func readConfig() (*Config, error) {
 	return &config, nil
 }
 
-func run(ctx context.Context, config *Config) error {
-	logger, err := telemetry.NewLogger(telemetry.LoggerConfig{
-		ServiceName:    config.Service.Name,
-		ServiceVersion: config.Service.Version,
-		Environment:    config.Service.Environment,
-	})
-	if err != nil {
-		log.Fatal(fmt.Errorf("error initializing logger: %w", err))
-	}
+func run(ctx context.Context, cfg *Config) error {
+	logger := newLogger(cfg)
 
 	tracer, err := telemetry.NewTracer(ctx, telemetry.TracerConfig{
-		Enabled:        config.Trace.Enabled,
-		ServiceName:    config.Service.Name,
-		ServiceVersion: config.Service.Version,
-		Environment:    config.Service.Environment,
-		Endpoint:       config.Trace.ProviderURL,
+		Enabled:        cfg.Trace.Enabled,
+		ServiceName:    cfg.Service.Name,
+		ServiceVersion: cfg.Service.Version,
+		Environment:    cfg.Service.Environment,
+		Endpoint:       cfg.Trace.ProviderURL,
 	})
 	if err != nil {
-		logger.Fatal("error initializing tracer", telemetry.Error(err))
+		logger.Fatal("error initializing tracer", zap.Error(err))
 	}
 
-	cache, err := newCache(ctx, logger, tracer, &config.Cache)
+	cache, err := newCache(ctx, logger, tracer, &cfg.Cache)
 	if err != nil {
-		logger.Fatal("error initializing cache", telemetry.Error(err))
+		logger.Fatal("error initializing cache", zap.Error(err))
 	}
 
-	storage, err := newStorage(ctx, logger, tracer, &config.Storage)
+	storage, err := newStorage(ctx, logger, tracer, &cfg.Storage)
 	if err != nil {
-		logger.Fatal("error initializing storage", telemetry.Error(err))
+		logger.Fatal("error initializing storage", zap.Error(err))
 	}
 
 	interceptors := connect.WithInterceptors(
@@ -131,7 +127,7 @@ func run(ctx context.Context, config *Config) error {
 		interceptors,
 	))
 
-	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", config.Service.Addr, config.Storage.Type))
+	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", cfg.Service.Addr, cfg.Storage.Type))
 
 	return http.ListenAndServe(
 		":8080",
@@ -139,18 +135,34 @@ func run(ctx context.Context, config *Config) error {
 	)
 }
 
-func newCache(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer, config *CacheConfig) (cache.Cache, error) {
-	switch config.Type {
+func newLogger(cfg *Config) *zap.Logger {
+	zapCfg := zap.NewProductionConfig()
+	if cfg.LogFormat == "console" {
+		zapCfg.Encoding = "console"
+	}
+	return zap.Must(zapCfg.Build(
+		zap.AddCaller(),
+		zap.AddStacktrace(zapcore.PanicLevel),
+		zap.Fields(
+			zap.String("serviceName", cfg.Service.Name),
+			zap.String("serviceVersion", cfg.Service.Version),
+			zap.String("environment", cfg.Service.Environment),
+		),
+	))
+}
+
+func newCache(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *CacheConfig) (cache.Cache, error) {
+	switch cfg.Type {
 	case "memcached":
-		client, err := memcached.CreateClient(config.Memcached, logger)
+		client, err := memcached.CreateClient(cfg.Memcached, logger)
 		if err != nil {
 			return nil, err
 		}
 		return memcached.New(client, tracer), nil
 	case "memory":
-		return cachememory.New(config.Size, tracer)
+		return cachememory.New(cfg.Size, tracer)
 	case "redis":
-		client, err := redis.CreateClient(ctx, config.Redis, logger)
+		client, err := redis.CreateClient(ctx, cfg.Redis, logger)
 		if err != nil {
 			return nil, err
 		}
@@ -158,27 +170,27 @@ func newCache(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer,
 	case "noop":
 		return cache.NewNoopCache(), nil
 	default:
-		return nil, fmt.Errorf("undefined cache kind: %s", config.Type)
+		return nil, fmt.Errorf("undefined cache kind: %s", cfg.Type)
 	}
 }
 
-func newStorage(ctx context.Context, logger telemetry.Logger, tracer trace.Tracer, config *StorageConfig) (storage.Storage, error) {
-	switch config.Type {
+func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *StorageConfig) (storage.Storage, error) {
+	switch cfg.Type {
 	case "memory":
 		return memory.New(tracer), nil
 	case "mongodb":
-		coll, err := mongodb.CreateCollection(ctx, config.MongoDB, logger)
+		coll, err := mongodb.CreateCollection(ctx, cfg.MongoDB, logger)
 		if err != nil {
 			return nil, err
 		}
 		return mongodb.New(coll, tracer), nil
 	case "postgres":
-		pool, err := postgres.CreatePool(ctx, config.Postgres, logger)
+		pool, err := postgres.CreatePool(ctx, cfg.Postgres, logger)
 		if err != nil {
 			return nil, err
 		}
 		return postgres.New(pool, tracer), nil
 	default:
-		return nil, fmt.Errorf("undefined storage kind: %s", config.Type)
+		return nil, fmt.Errorf("undefined storage kind: %s", cfg.Type)
 	}
 }

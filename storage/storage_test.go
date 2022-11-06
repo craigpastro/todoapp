@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/storage/mongodb"
@@ -15,9 +14,11 @@ import (
 	"github.com/craigpastro/crudapp/telemetry"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"go.uber.org/zap"
 )
 
 const data = "some data"
@@ -63,7 +64,7 @@ func newMemory() storageTest {
 
 func newMongoDB(t *testing.T) storageTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -92,7 +93,7 @@ func newMongoDB(t *testing.T) storageTest {
 
 func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
-	logger := telemetry.Must(telemetry.NewLogger(telemetry.LoggerConfig{}))
+	logger := zap.NewNop()
 	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
@@ -132,7 +133,7 @@ func newPostgres(t *testing.T) storageTest {
 
 func testRead(t *testing.T, storage storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 	created, err := storage.Create(ctx, userID, data)
 	require.NoError(t, err)
 	record, err := storage.Read(ctx, created.UserID, created.PostID)
@@ -145,7 +146,7 @@ func testRead(t *testing.T, storage storage.Storage) {
 
 func testReadNotExists(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 
 	_, err := db.Read(ctx, userID, "1")
 	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
@@ -153,7 +154,7 @@ func testReadNotExists(t *testing.T, db storage.Storage) {
 
 func testReadAll(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 
 	rec1, err := db.Create(ctx, userID, "data 1")
 	require.NoError(t, err)
@@ -181,7 +182,7 @@ func testReadAll(t *testing.T, db storage.Storage) {
 
 func testUpdate(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
@@ -198,7 +199,7 @@ func testUpdate(t *testing.T, db storage.Storage) {
 
 func testUpdateNotExists(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 
 	_, err := db.Update(ctx, userID, "1", "new data")
 	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
@@ -206,7 +207,7 @@ func testUpdateNotExists(t *testing.T, db storage.Storage) {
 
 func testDelete(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
+	userID := ulid.Make().String()
 	created, _ := db.Create(ctx, userID, data)
 
 	err := db.Delete(ctx, userID, created.PostID)
@@ -219,8 +220,8 @@ func testDelete(t *testing.T, db storage.Storage) {
 
 func testDeleteNotExists(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
-	userID := myid.New()
-	postID := myid.New()
+	userID := ulid.Make().String()
+	postID := ulid.Make().String()
 
 	err := db.Delete(ctx, userID, postID)
 	require.NoError(t, err)

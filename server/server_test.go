@@ -12,9 +12,9 @@ import (
 	"github.com/craigpastro/crudapp/cache"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
-	"github.com/craigpastro/crudapp/myid"
 	"github.com/craigpastro/crudapp/storage/memory"
 	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
 
@@ -43,7 +43,7 @@ func TestAPI(t *testing.T) {
 	client := crudappv1connect.NewCrudAppServiceClient(http.DefaultClient, fmt.Sprintf("http://%s", addr))
 
 	t.Run("create", func(t *testing.T) {
-		req := connect.NewRequest(&pb.CreateRequest{UserId: myid.New(), Data: data})
+		req := connect.NewRequest(&pb.CreateRequest{UserId: ulid.Make().String(), Data: data})
 
 		res, err := client.Create(context.Background(), req)
 		require.NoError(t, err)
@@ -54,7 +54,7 @@ func TestAPI(t *testing.T) {
 
 	t.Run("read", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
@@ -67,14 +67,14 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("read not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.ReadRequest{UserId: myid.New(), PostId: "foo"})
+		req := connect.NewRequest(&pb.ReadRequest{UserId: ulid.Make().String(), PostId: "foo"})
 		_, err := client.Read(context.Background(), req)
 		require.ErrorContains(t, err, "Post does not exist")
 	})
 
 	t.Run("update", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
@@ -93,14 +93,14 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("update not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.UpdateRequest{UserId: myid.New(), PostId: "foo", Data: "new data"})
+		req := connect.NewRequest(&pb.UpdateRequest{UserId: ulid.Make().String(), PostId: "foo", Data: "new data"})
 		_, err := client.Update(context.Background(), req)
 		require.ErrorContains(t, err, "Post does not exist")
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		ctx := context.Background()
-		userID := myid.New()
+		userID := ulid.Make().String()
 		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
@@ -116,7 +116,7 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("delete not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.DeleteRequest{UserId: myid.New(), PostId: "foo"})
+		req := connect.NewRequest(&pb.DeleteRequest{UserId: ulid.Make().String(), PostId: "foo"})
 		_, err := client.Delete(context.Background(), req)
 		require.NoError(t, err)
 	})

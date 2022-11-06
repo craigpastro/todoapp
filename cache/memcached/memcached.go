@@ -10,8 +10,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/cache"
 	"github.com/craigpastro/crudapp/storage"
-	"github.com/craigpastro/crudapp/telemetry"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 )
 
 var _ cache.Cache = (*Memcached)(nil)
@@ -32,7 +32,7 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 	}
 }
 
-func CreateClient(config Config, logger telemetry.Logger) (*memcache.Client, error) {
+func CreateClient(config Config, logger *zap.Logger) (*memcache.Client, error) {
 	client := memcache.New(strings.Split(config.Servers, ",")...)
 
 	err := backoff.Retry(func() error {

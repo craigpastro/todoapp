@@ -1,6 +1,6 @@
 module github.com/craigpastro/crudapp/tooling
 
-go 1.18
+go 1.19
 
 require (
 	github.com/bufbuild/buf v1.3.1
