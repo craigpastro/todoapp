@@ -22,10 +22,6 @@ type Postgres struct {
 	tracer trace.Tracer
 }
 
-type Config struct {
-	URL string
-}
-
 func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 	return &Postgres{
 		pool:   pool,
@@ -33,11 +29,14 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 	}
 }
 
-func CreatePool(ctx context.Context, config Config, logger *zap.Logger) (*pgxpool.Pool, error) {
+func CreatePool(ctx context.Context, connString string, logger *zap.Logger) (*pgxpool.Pool, error) {
 	var pool *pgxpool.Pool
-	err := backoff.Retry(func() error {
-		var err error
-		pool, err = pgxpool.Connect(ctx, config.URL)
+	var err error
+	err = backoff.Retry(func() error {
+		pool, err = pgxpool.Connect(ctx, connString)
+		if err != nil {
+			return err
+		}
 		if err != nil {
 			logger.Info("waiting for Postgres")
 			return err

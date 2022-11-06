@@ -79,7 +79,7 @@ func newMemcached(t *testing.T) cacheTest {
 	port, err := container.MappedPort(ctx, "11211/tcp")
 	require.NoError(t, err)
 
-	client, err := memcached.CreateClient(memcached.Config{Servers: fmt.Sprintf("localhost:%s", port.Port())}, logger)
+	client, err := memcached.CreateClient(fmt.Sprintf("localhost:%s", port.Port()), logger)
 	require.NoError(t, err)
 
 	return cacheTest{
@@ -107,7 +107,7 @@ func newRedis(t *testing.T) cacheTest {
 	port, err := container.MappedPort(ctx, "6379/tcp")
 	require.NoError(t, err)
 
-	client, err := redis.CreateClient(ctx, redis.Config{Addr: fmt.Sprintf("localhost:%s", port.Port()), Password: ""}, logger)
+	client, err := redis.CreateClient(ctx, fmt.Sprintf("localhost:%s", port.Port()), "", logger)
 	require.NoError(t, err)
 
 	return cacheTest{
