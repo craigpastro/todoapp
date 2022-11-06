@@ -20,11 +20,6 @@ type Redis struct {
 	tracer trace.Tracer
 }
 
-type Config struct {
-	Addr     string
-	Password string
-}
-
 func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	return &Redis{
 		client: client,
@@ -32,10 +27,10 @@ func New(client *redis.Client, tracer trace.Tracer) *Redis {
 	}
 }
 
-func CreateClient(ctx context.Context, config Config, logger *zap.Logger) (*redis.Client, error) {
+func CreateClient(ctx context.Context, addr, password string, logger *zap.Logger) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
-		Addr:     config.Addr,
-		Password: config.Password,
+		Addr:     addr,
+		Password: password,
 	})
 
 	err := backoff.Retry(func() error {

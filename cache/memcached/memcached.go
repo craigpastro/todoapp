@@ -21,10 +21,6 @@ type Memcached struct {
 	tracer trace.Tracer
 }
 
-type Config struct {
-	Servers string
-}
-
 func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 	return &Memcached{
 		client: client,
@@ -32,8 +28,8 @@ func New(client *memcache.Client, tracer trace.Tracer) *Memcached {
 	}
 }
 
-func CreateClient(config Config, logger *zap.Logger) (*memcache.Client, error) {
-	client := memcache.New(strings.Split(config.Servers, ",")...)
+func CreateClient(servers string, logger *zap.Logger) (*memcache.Client, error) {
+	client := memcache.New(strings.Split(servers, ",")...)
 
 	err := backoff.Retry(func() error {
 		err := client.Ping()
