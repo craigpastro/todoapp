@@ -5,8 +5,6 @@ A simple CRUD app to demonstrate concepts.
 ## Things to do
 
 - Wrap errors
-- Add develop logging
-- Switch back to env vars only. go-envconfig looks fine.
 - Implement preshared key auth
 - Add health check
 - Add migrate command

@@ -9,11 +9,11 @@ import (
 	"testing"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/craigpastro/crudapp/cache"
+	"github.com/craigpastro/crudapp/internal/cache"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
-	"github.com/craigpastro/crudapp/storage/memory"
-	"github.com/craigpastro/crudapp/telemetry"
+	"github.com/craigpastro/crudapp/internal/storage/memory"
+	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )

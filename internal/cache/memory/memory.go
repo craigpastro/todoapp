@@ -3,8 +3,8 @@ package memory
 import (
 	"context"
 
-	"github.com/craigpastro/crudapp/cache"
-	"github.com/craigpastro/crudapp/storage"
+	"github.com/craigpastro/crudapp/internal/cache"
+	"github.com/craigpastro/crudapp/internal/storage"
 	lru "github.com/hashicorp/golang-lru"
 	"go.opentelemetry.io/otel/trace"
 )
