@@ -30,13 +30,13 @@ func New(pool *pgxpool.Pool, tracer trace.Tracer) *Postgres {
 }
 
 func CreatePool(ctx context.Context, connString string, logger *zap.Logger) (*pgxpool.Pool, error) {
-	pool, err := pgxpool.Connect(ctx, connString)
-	if err != nil {
-		return nil, err
-	}
-
+	var pool *pgxpool.Pool
+	var err error
 	err = backoff.Retry(func() error {
-		err = pool.Ping(ctx)
+		pool, err = pgxpool.Connect(ctx, connString)
+		if err != nil {
+			return err
+		}
 		if err != nil {
 			logger.Info("waiting for Postgres")
 			return err
