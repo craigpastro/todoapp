@@ -23,11 +23,11 @@ func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
 			}
 			if err != nil {
 				fields = append(fields, zap.Error(err))
-				logger.Error("res", fields...)
+				logger.Error("rpc_error", fields...)
 				return nil, err
 			}
 
-			logger.Info("res", fields...)
+			logger.Info("rpc_complete", fields...)
 
 			return res, nil
 		})

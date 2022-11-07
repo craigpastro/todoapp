@@ -38,10 +38,6 @@ create-local-postgres-table:
 run-memory: build
 	./bin/crudapp
 
-.PHONY: run-mongodb
-run-mongodb: build
-	STORAGE_TYPE=mongodb ./bin/crudapp
-
 .PHONY: run-postgres
 run-postgres: build
 	STORAGE_TYPE=postgres POSTGRES_URI=postgres://postgres:password@127.0.0.1:5432/postgres ./bin/crudapp

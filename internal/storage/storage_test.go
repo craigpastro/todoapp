@@ -9,7 +9,6 @@ import (
 
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
-	"github.com/craigpastro/crudapp/internal/storage/mongodb"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/google/go-cmp/cmp"
@@ -32,7 +31,6 @@ type storageTest struct {
 func TestStorage(t *testing.T) {
 	storageTests := []storageTest{
 		newMemory(),
-		newMongoDB(t),
 		newPostgres(t),
 	}
 
@@ -59,35 +57,6 @@ func newMemory() storageTest {
 	return storageTest{
 		name:    "memory",
 		storage: memory.New(telemetry.NewNoopTracer()),
-	}
-}
-
-func newMongoDB(t *testing.T) storageTest {
-	ctx := context.Background()
-	logger := zap.NewNop()
-	tracer := telemetry.NewNoopTracer()
-
-	req := testcontainers.ContainerRequest{
-		Image:        "mongo:latest",
-		ExposedPorts: []string{"27017/tcp"},
-		Env:          map[string]string{"MONGO_INITDB_ROOT_USERNAME": "mongodb", "MONGO_INITDB_ROOT_PASSWORD": "password"},
-	}
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: req,
-		Started:          true,
-	})
-	require.NoError(t, err)
-
-	port, err := container.MappedPort(ctx, "27017/tcp")
-	require.NoError(t, err)
-
-	coll, err := mongodb.CreateCollection(ctx, fmt.Sprintf("mongodb://mongodb:password@localhost:%s", port.Port()), logger)
-	require.NoError(t, err)
-
-	return storageTest{
-		name:      "mongodb",
-		storage:   mongodb.New(coll, tracer),
-		container: container,
 	}
 }
 
@@ -183,18 +152,16 @@ func testReadAll(t *testing.T, db storage.Storage) {
 func testUpdate(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
-	created, err := db.Create(ctx, userID, data)
+	record, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
 	time.Sleep(time.Millisecond) // just in case
 	newData := "new data"
-	_, err = db.Update(ctx, userID, created.PostID, newData)
-	require.NoError(t, err)
-	record, err := db.Read(ctx, created.UserID, created.PostID)
+	updatedRecord, err := db.Update(ctx, userID, record.PostID, newData)
 	require.NoError(t, err)
 
-	require.Equal(t, record.Data, newData, "got '%s', want '%s'")
-	require.True(t, record.CreatedAt.Before(record.UpdatedAt))
+	require.Equal(t, updatedRecord.Data, newData, "got '%s', want '%s'")
+	require.True(t, record.CreatedAt.Before(updatedRecord.UpdatedAt))
 }
 
 func testUpdateNotExists(t *testing.T, db storage.Storage) {

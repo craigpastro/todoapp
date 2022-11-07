@@ -87,19 +87,19 @@ func (i *recordInterator) Close(_ context.Context) {
 	i.records = nil
 }
 
-func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
+func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
 	_, span := m.tracer.Start(ctx, "memory.Update")
 	defer span.End()
 
 	post, ok := m.store[userID][postID]
 	if !ok {
-		return time.Time{}, storage.ErrPostDoesNotExist
+		return nil, storage.ErrPostDoesNotExist
 	}
 
-	now := time.Now()
-	m.store[userID][postID] = storage.NewRecord(post.UserID, post.PostID, data, post.CreatedAt, now)
+	newRecord := storage.NewRecord(post.UserID, post.PostID, data, post.CreatedAt, time.Now())
+	m.store[userID][postID] = newRecord
 
-	return now, nil
+	return newRecord, nil
 }
 
 func (m *MemoryDB) Delete(ctx context.Context, userID, postID string) error {

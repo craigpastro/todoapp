@@ -143,6 +143,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
+
 	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
@@ -150,7 +151,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 		return nil, err
 	}
 
-	updatedAt, err := s.Storage.Update(ctx, userID, postID, msg.GetData())
+	record, err := s.Storage.Update(ctx, userID, postID, msg.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
@@ -158,7 +159,7 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 
 	return connect.NewResponse(&pb.UpdateResponse{
 		PostId:    msg.PostId,
-		UpdatedAt: timestamppb.New(updatedAt),
+		UpdatedAt: timestamppb.New(record.UpdatedAt),
 	}), nil
 }
 

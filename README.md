@@ -4,6 +4,7 @@ A simple CRUD app to demonstrate concepts.
 
 ## Things to do
 
+- Use sqlc for Postgres
 - Wrap errors
 - Implement preshared key auth
 - Add health check
@@ -16,7 +17,6 @@ And, of course, I welcome suggestions.
 Depending on the storage type you want, run one of the following commands.
 ```
 make run-memory
-make run-mongodb
 make run-postgres
 ```
 

@@ -16,7 +16,6 @@ import (
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
-	"github.com/craigpastro/crudapp/internal/storage/mongodb"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/craigpastro/crudapp/server"
@@ -40,8 +39,7 @@ type config struct {
 	TraceEnabled     bool   `env:"TRACE_ENABLED,default=false"`
 	TraceProviderURL string `env:"TRACE_PROVIDER_URL,default=localhost:4317"`
 
-	StorageType string `env:"STORAGE_TYPE,default=memory"` // memory, mongodb, postgres
-	MongoDBURL  string `env:"MONGODB_URL,default=mongodb://mongodb:password@127.0.0.1:27017"`
+	StorageType string `env:"STORAGE_TYPE,default=memory"` // memory, postgres
 	PostgresURL string `env:"POSTGRES_URL,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
 
 	CacheType        string `env:"CACHE_TYPE,default=memory"` // memory, memcached, redis
@@ -154,12 +152,6 @@ func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cf
 	switch cfg.StorageType {
 	case "memory":
 		return memory.New(tracer), nil
-	case "mongodb":
-		coll, err := mongodb.CreateCollection(ctx, cfg.MongoDBURL, logger)
-		if err != nil {
-			return nil, err
-		}
-		return mongodb.New(coll, tracer), nil
 	case "postgres":
 		pool, err := postgres.CreatePool(ctx, cfg.PostgresURL, logger)
 		if err != nil {
