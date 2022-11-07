@@ -4,10 +4,9 @@ go 1.19
 
 require (
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d
-	github.com/bufbuild/connect-go v0.4.0
+	github.com/bufbuild/connect-go v1.1.0
 	github.com/bufbuild/connect-grpcreflect-go v0.1.0
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/envoyproxy/protoc-gen-validate v0.6.8
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru v0.5.4
