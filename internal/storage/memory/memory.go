@@ -87,16 +87,17 @@ func (i *recordInterator) Close(_ context.Context) {
 	i.records = nil
 }
 
-func (m *MemoryDB) Update(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
+func (m *MemoryDB) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
 	_, span := m.tracer.Start(ctx, "memory.Update")
 	defer span.End()
 
-	post, ok := m.store[userID][postID]
-	if !ok {
-		return nil, storage.ErrPostDoesNotExist
+	now := time.Now()
+	createdAt := now
+	if post, ok := m.store[userID][postID]; ok {
+		createdAt = post.CreatedAt
 	}
 
-	newRecord := storage.NewRecord(post.UserID, post.PostID, data, post.CreatedAt, time.Now())
+	newRecord := storage.NewRecord(userID, postID, data, createdAt, now)
 	m.store[userID][postID] = newRecord
 
 	return newRecord, nil

@@ -39,8 +39,7 @@ func TestStorage(t *testing.T) {
 			testRead(t, test.storage)
 			testReadNotExists(t, test.storage)
 			testReadAll(t, test.storage)
-			testUpdate(t, test.storage)
-			testUpdateNotExists(t, test.storage)
+			testUpsert(t, test.storage)
 			testDelete(t, test.storage)
 			testDeleteNotExists(t, test.storage)
 
@@ -149,7 +148,7 @@ func testReadAll(t *testing.T, db storage.Storage) {
 	require.False(t, iter.Next(ctx))
 }
 
-func testUpdate(t *testing.T, db storage.Storage) {
+func testUpsert(t *testing.T, db storage.Storage) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 	record, err := db.Create(ctx, userID, data)
@@ -157,19 +156,11 @@ func testUpdate(t *testing.T, db storage.Storage) {
 
 	time.Sleep(time.Millisecond) // just in case
 	newData := "new data"
-	updatedRecord, err := db.Update(ctx, userID, record.PostID, newData)
+	updatedRecord, err := db.Upsert(ctx, userID, record.PostID, newData)
 	require.NoError(t, err)
 
 	require.Equal(t, updatedRecord.Data, newData, "got '%s', want '%s'")
 	require.True(t, record.CreatedAt.Before(updatedRecord.UpdatedAt))
-}
-
-func testUpdateNotExists(t *testing.T, db storage.Storage) {
-	ctx := context.Background()
-	userID := ulid.Make().String()
-
-	_, err := db.Update(ctx, userID, "1", "new data")
-	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
 func testDelete(t *testing.T, db storage.Storage) {

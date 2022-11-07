@@ -81,8 +81,8 @@ func TestAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		newData := "new Data"
-		updateReq := connect.NewRequest(&pb.UpdateRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
-		_, err = client.Update(ctx, updateReq)
+		updateReq := connect.NewRequest(&pb.UpsertRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
+		_, err = client.Upsert(ctx, updateReq)
 		require.NoError(t, err)
 
 		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
@@ -90,12 +90,6 @@ func TestAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		require.Equal(t, readRes.Msg.Data, newData, "got '%s', want '%s'", readRes.Msg.Data, newData)
-	})
-
-	t.Run("update not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.UpdateRequest{UserId: ulid.Make().String(), PostId: "foo", Data: "new data"})
-		_, err := client.Update(context.Background(), req)
-		require.ErrorContains(t, err, "Post does not exist")
 	})
 
 	t.Run("delete", func(t *testing.T) {

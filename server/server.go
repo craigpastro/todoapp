@@ -135,7 +135,7 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	return nil
 }
 
-func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateRequest]) (*connect.Response[pb.UpdateResponse], error) {
+func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
 	msg := req.Msg
 	if err := validate(msg); err != nil {
 		return nil, err
@@ -151,13 +151,13 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 		return nil, err
 	}
 
-	record, err := s.Storage.Update(ctx, userID, postID, msg.GetData())
+	record, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
-	return connect.NewResponse(&pb.UpdateResponse{
+	return connect.NewResponse(&pb.UpsertResponse{
 		PostId:    msg.PostId,
 		UpdatedAt: timestamppb.New(record.UpdatedAt),
 	}), nil
