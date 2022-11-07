@@ -112,22 +112,30 @@ func (i *recordInterator) Close(_ context.Context) {
 	i.rows.Close()
 }
 
-func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (time.Time, error) {
+func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
 	ctx, span := p.tracer.Start(ctx, "postgres.Update")
 	defer span.End()
 
-	if _, err := p.Read(ctx, userID, postID); errors.Is(err, storage.ErrPostDoesNotExist) {
-		return time.Time{}, err
-	} else if err != nil {
-		return time.Time{}, fmt.Errorf("error updating: %w", err)
+	record, err := p.Read(ctx, userID, postID)
+	if err != nil {
+		if errors.Is(err, storage.ErrPostDoesNotExist) {
+			return nil, err
+		}
+		return nil, fmt.Errorf("error updating: %w", err)
 	}
 
 	now := time.Now()
 	if _, err := p.pool.Exec(ctx, "UPDATE post SET data = $1, updated_at = $2 WHERE user_id = $3 AND post_id = $4", data, now, userID, postID); err != nil {
-		return time.Time{}, fmt.Errorf("error updating: %w", err)
+		return nil, fmt.Errorf("error updating: %w", err)
 	}
 
-	return now, nil
+	return &storage.Record{
+		UserID:    userID,
+		PostID:    postID,
+		Data:      data,
+		CreatedAt: record.CreatedAt,
+		UpdatedAt: now,
+	}, nil
 }
 
 func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
