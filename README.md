@@ -77,15 +77,15 @@ grpcurl -plaintext -d '{"userId": "1"}' localhost:8080 crudapp.v1.CrudAppService
 ```
 Note this is a grpcurl command. My attempts to get a streaming response with curl aren't working yet.
 
-### Update
+### Upsert
 
-To update user 1's post 2: 
+To upsert user 1's post 2: 
 ```
-make USER_ID=1 POST_ID=2 DATA='update my great post' update
+make USER_ID=1 POST_ID=2 DATA='update my great post' upsert
 ```
 which just calls
 ```
-curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Update \
+curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Upsert \
   -H 'Content-Type: application/json' \
   -d '{"userId": "1", "postId": "2", "data": "update my great post"}'
 ```

@@ -113,7 +113,7 @@ func (i *recordInterator) Close(_ context.Context) {
 }
 
 func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.Update")
+	ctx, span := p.tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
 	record, err := p.Read(ctx, userID, postID)

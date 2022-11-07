@@ -72,7 +72,7 @@ func TestAPI(t *testing.T) {
 		require.ErrorContains(t, err, "Post does not exist")
 	})
 
-	t.Run("update", func(t *testing.T) {
+	t.Run("upsert", func(t *testing.T) {
 		ctx := context.Background()
 		userID := ulid.Make().String()
 
@@ -81,8 +81,8 @@ func TestAPI(t *testing.T) {
 		require.NoError(t, err)
 
 		newData := "new Data"
-		updateReq := connect.NewRequest(&pb.UpsertRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
-		_, err = client.Upsert(ctx, updateReq)
+		upsertReq := connect.NewRequest(&pb.UpsertRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
+		_, err = client.Upsert(ctx, upsertReq)
 		require.NoError(t, err)
 
 		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})

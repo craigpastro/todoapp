@@ -88,7 +88,7 @@ func (i *recordInterator) Close(_ context.Context) {
 }
 
 func (m *MemoryDB) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
-	_, span := m.tracer.Start(ctx, "memory.Update")
+	_, span := m.tracer.Start(ctx, "memory.Upsert")
 	defer span.End()
 
 	now := time.Now()
