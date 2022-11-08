@@ -6,5 +6,4 @@ linters:
   enable:
     - gofmt
     - goimports
-    - gosec
     - stylecheck
