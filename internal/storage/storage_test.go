@@ -79,10 +79,10 @@ func newPostgres(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "5432/tcp")
 	require.NoError(t, err)
 
-	pool, err := postgres.CreatePool(ctx, fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port()), logger)
+	db, err := postgres.CreateDB(ctx, fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port()), logger)
 	require.NoError(t, err)
 
-	_, err = pool.Exec(ctx, `CREATE TABLE IF NOT EXISTS post (
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS post (
 		user_id TEXT NOT NULL,
 		post_id TEXT NOT NULL,
 		data TEXT,
@@ -94,7 +94,7 @@ func newPostgres(t *testing.T) storageTest {
 
 	return storageTest{
 		name:      "postgres",
-		storage:   postgres.New(pool, tracer),
+		storage:   postgres.New(db, tracer),
 		container: container,
 	}
 }
