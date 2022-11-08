@@ -9,13 +9,12 @@ import (
 var ErrPostDoesNotExist = errors.New("post does not exist")
 
 // Record is a storage record.
-// It is tagged with json for storing in Redis
 type Record struct {
-	UserID    string    `json:"userID"`
-	PostID    string    `json:"postID"`
-	Data      string    `json:"data"`
-	CreatedAt time.Time `json:"createdAt"`
-	UpdatedAt time.Time `json:"updatedAt"`
+	UserID    string
+	PostID    string
+	Data      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func NewRecord(userID, postID, data string, createdAt time.Time, updatedAt time.Time) *Record {
