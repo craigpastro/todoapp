@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/craigpastro/crudapp/internal/cache"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
@@ -24,11 +23,10 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	cache := cache.NewNoopCache()
 	tracer := telemetry.NewNoopTracer()
 	storage := memory.New(tracer)
 	mux := http.NewServeMux()
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(cache, storage, tracer)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(storage, tracer)))
 
 	go func() {
 		if err := http.ListenAndServe(addr, mux); err != nil {

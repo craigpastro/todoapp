@@ -8,10 +8,6 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
-	"github.com/craigpastro/crudapp/internal/cache"
-	"github.com/craigpastro/crudapp/internal/cache/memcached"
-	cachememory "github.com/craigpastro/crudapp/internal/cache/memory"
-	"github.com/craigpastro/crudapp/internal/cache/redis"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/storage"
@@ -41,12 +37,7 @@ type config struct {
 
 	StorageType string `env:"STORAGE_TYPE,default=memory"` // memory, postgres
 	PostgresURL string `env:"POSTGRES_URL,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
-
-	CacheType        string `env:"CACHE_TYPE,default=memory"` // memory, memcached, redis
-	CacheSize        int    `env:"CACHE_SIZE,default=10000"`
-	MemcachedServers string `env:"MEMCACHED_SERVERS,default=localhost:11211"`
-	RedisAddr        string `env:"REDIS_ADDR,default=localhost:6379"`
-	RedisPassword    string `env:"REDIS_PASSWORD,default="`
+	CacheSize   int    `env:"CACHE_SIZE,default=10000"`
 }
 
 func main() {
@@ -78,11 +69,6 @@ func run(ctx context.Context, cfg *config) error {
 		logger.Fatal("error initializing tracer", zap.Error(err))
 	}
 
-	cache, err := newCache(ctx, logger, tracer, cfg)
-	if err != nil {
-		logger.Fatal("error initializing cache", zap.Error(err))
-	}
-
 	storage, err := newStorage(ctx, logger, tracer, cfg)
 	if err != nil {
 		logger.Fatal("error initializing storage", zap.Error(err))
@@ -97,7 +83,7 @@ func run(ctx context.Context, cfg *config) error {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(cache, storage, tracer),
+		server.NewServer(storage, tracer),
 		interceptors,
 	))
 
@@ -125,40 +111,20 @@ func newLogger(cfg *config) *zap.Logger {
 	))
 }
 
-func newCache(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *config) (cache.Cache, error) {
-	switch cfg.CacheType {
-	case "memcached":
-		client, err := memcached.CreateClient(cfg.MemcachedServers, logger)
-		if err != nil {
-			return nil, err
-		}
-		return memcached.New(client, tracer), nil
-	case "memory":
-		return cachememory.New(cfg.CacheSize, tracer)
-	case "redis":
-		client, err := redis.CreateClient(ctx, cfg.RedisAddr, cfg.RedisPassword, logger)
-		if err != nil {
-			return nil, err
-		}
-		return redis.New(client, tracer), nil
-	case "noop":
-		return cache.NewNoopCache(), nil
-	default:
-		return nil, fmt.Errorf("undefined cache kind: %s", cfg.CacheType)
-	}
-}
-
 func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *config) (storage.Storage, error) {
+	var s storage.Storage
 	switch cfg.StorageType {
 	case "memory":
-		return memory.New(tracer), nil
+		s = memory.New(tracer)
 	case "postgres":
-		pool, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
+		db, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
 		if err != nil {
 			return nil, err
 		}
-		return postgres.New(pool, tracer), nil
+		s = postgres.New(db, tracer)
 	default:
 		return nil, fmt.Errorf("undefined storage kind: %s", cfg.StorageType)
 	}
+
+	return storage.NewCachingStorage(s, cfg.CacheSize)
 }

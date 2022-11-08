@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/craigpastro/crudapp/internal/cache"
 	"github.com/craigpastro/crudapp/internal/errors"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
@@ -18,14 +17,12 @@ import (
 type server struct {
 	crudappv1connect.UnimplementedCrudAppServiceHandler
 
-	Cache   cache.Cache
 	Storage storage.Storage
 	Tracer  trace.Tracer
 }
 
-func NewServer(cache cache.Cache, storage storage.Storage, tracer trace.Tracer) *server {
+func NewServer(storage storage.Storage, tracer trace.Tracer) *server {
 	return &server{
-		Cache:   cache,
 		Storage: storage,
 		Tracer:  tracer,
 	}
@@ -75,15 +72,10 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	ctx, span := s.Tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	var err error
-	record, ok := s.Cache.Get(ctx, userID, postID)
-	if !ok {
-		record, err = s.Storage.Read(ctx, userID, postID)
-		if err != nil {
-			telemetry.TraceError(span, err)
-			return nil, errors.HandleStorageError(err)
-		}
-		_ = s.Cache.Add(ctx, userID, postID, record)
+	record, err := s.Storage.Read(ctx, userID, postID)
+	if err != nil {
+		telemetry.TraceError(span, err)
+		return nil, errors.HandleStorageError(err)
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
@@ -147,10 +139,6 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	if err := s.Cache.Remove(ctx, userID, postID); err != nil {
-		return nil, err
-	}
-
 	record, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
 	if err != nil {
 		telemetry.TraceError(span, err)
@@ -173,10 +161,6 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteReque
 	postID := msg.GetPostId()
 	ctx, span := s.Tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
-
-	if err := s.Cache.Remove(ctx, userID, postID); err != nil {
-		return nil, err
-	}
 
 	if err := s.Storage.Delete(ctx, userID, postID); err != nil {
 		telemetry.TraceError(span, err)
