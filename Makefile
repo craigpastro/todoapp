@@ -58,9 +58,9 @@ read:
 read-all:
 	grpcurl -plaintext -d '{"userId": "${USER_ID}"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
 
-.PHONY: update
-update:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Update \
+.PHONY: upsert
+upsert:
+	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Upsert \
       -H 'Content-Type: application/json' \
       -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
 

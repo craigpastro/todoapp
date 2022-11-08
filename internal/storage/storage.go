@@ -38,6 +38,6 @@ type Storage interface {
 	Create(ctx context.Context, userID, data string) (*Record, error)
 	Read(ctx context.Context, userID, postID string) (*Record, error)
 	ReadAll(ctx context.Context, userID string) (RecordIterator, error)
-	Update(ctx context.Context, userID, postID, data string) (*Record, error)
+	Upsert(ctx context.Context, userID, postID, data string) (*Record, error)
 	Delete(ctx context.Context, userID, postID string) error
 }

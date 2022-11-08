@@ -12,7 +12,7 @@ service CrudAppService {
 
   rpc ReadAll(ReadAllRequest) returns (stream ReadAllResponse) {}
 
-  rpc Update(UpdateRequest) returns (UpdateResponse) {}
+  rpc Upsert(UpsertRequest) returns (UpsertResponse) {}
 
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
@@ -52,13 +52,13 @@ message ReadAllResponse {
   google.protobuf.Timestamp updated_at = 5;
 }
 
-message UpdateRequest {
+message UpsertRequest {
   string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
   string post_id = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
   string data = 3 [(validate.rules).string = {min_len: 1, max_len: 5000}];
 }
 
-message UpdateResponse {
+message UpsertResponse {
   string post_id = 1;
   google.protobuf.Timestamp updated_at = 2;
 }

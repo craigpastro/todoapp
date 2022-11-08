@@ -112,8 +112,8 @@ func (i *recordInterator) Close(_ context.Context) {
 	i.rows.Close()
 }
 
-func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.Update")
+func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
+	ctx, span := p.tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
 	record, err := p.Read(ctx, userID, postID)
@@ -125,7 +125,8 @@ func (p *Postgres) Update(ctx context.Context, userID, postID, data string) (*st
 	}
 
 	now := time.Now()
-	if _, err := p.pool.Exec(ctx, "UPDATE post SET data = $1, updated_at = $2 WHERE user_id = $3 AND post_id = $4", data, now, userID, postID); err != nil {
+	stmt := "INSERT INTO post VALUES ($1, $2, $3, $4, $5) ON CONFLICT (user_id, post_id) DO UPDATE SET data = $3, updated_at = $5"
+	if _, err := p.pool.Exec(ctx, stmt, userID, postID, data, now, now); err != nil {
 		return nil, fmt.Errorf("error updating: %w", err)
 	}
 
