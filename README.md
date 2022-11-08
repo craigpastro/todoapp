@@ -4,7 +4,7 @@ A simple CRUD app to demonstrate concepts.
 
 ## Things to do
 
-- Use sqlc for Postgres
+- Use sqlc for Postgres (when they implement an iterator over rows https://github.com/kyleconroy/sqlc/issues/720)
 - Wrap errors
 - Implement preshared key auth
 - Add health check

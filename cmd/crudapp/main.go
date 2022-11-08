@@ -153,7 +153,7 @@ func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cf
 	case "memory":
 		return memory.New(tracer), nil
 	case "postgres":
-		pool, err := postgres.CreatePool(ctx, cfg.PostgresURL, logger)
+		pool, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
 		if err != nil {
 			return nil, err
 		}
