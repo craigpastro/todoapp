@@ -6,10 +6,9 @@ require (
 	github.com/bufbuild/connect-go v1.1.0
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/envoyproxy/protoc-gen-validate v0.9.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jackc/pgx/v5 v5.0.4
+	github.com/jackc/pgx/v5 v5.1.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/stretchr/testify v1.8.1
