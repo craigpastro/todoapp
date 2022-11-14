@@ -28,6 +28,7 @@ test: buf-generate
 
 .PHONY: build
 build: buf-generate
+	sqlc generate
 	go build -o ./bin/crudapp ./cmd/crudapp
 
 .PHONY: create-local-postgres-table
