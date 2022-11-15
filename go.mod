@@ -9,7 +9,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.9.0
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jackc/pgx/v5 v5.0.4
+	github.com/jackc/pgx/v5 v5.1.0
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/stretchr/testify v1.8.1
@@ -20,7 +20,7 @@ require (
 	go.opentelemetry.io/otel/sdk v1.11.1
 	go.opentelemetry.io/otel/trace v1.11.1
 	go.uber.org/zap v1.23.0
-	golang.org/x/net v0.1.0
+	golang.org/x/net v0.2.0
 	google.golang.org/grpc v1.50.1
 	google.golang.org/protobuf v1.28.1
 )
@@ -63,7 +63,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/crypto v0.2.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect

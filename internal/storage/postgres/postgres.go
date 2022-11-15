@@ -5,9 +5,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/craigpastro/crudapp/internal/gen/db"
 	"github.com/craigpastro/crudapp/internal/storage"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/oklog/ulid/v2"
@@ -18,14 +18,16 @@ import (
 var _ storage.Storage = (*Postgres)(nil)
 
 type Postgres struct {
-	db     *sql.DB
-	tracer trace.Tracer
+	queries *db.Queries
+	db      *sql.DB // still needed for streaming read all
+	tracer  trace.Tracer
 }
 
-func New(db *sql.DB, tracer trace.Tracer) *Postgres {
+func New(sqlDB *sql.DB, tracer trace.Tracer) *Postgres {
 	return &Postgres{
-		db:     db,
-		tracer: tracer,
+		queries: db.New(sqlDB),
+		db:      sqlDB,
+		tracer:  tracer,
 	}
 }
 
@@ -53,18 +55,21 @@ func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Re
 	ctx, span := p.tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
-	postID := ulid.Make().String()
-	now := time.Now()
-	if _, err := p.db.ExecContext(ctx, "INSERT INTO post VALUES ($1, $2, $3, $4, $5)", userID, postID, data, now, now); err != nil {
+	post, err := p.queries.Create(ctx, db.CreateParams{
+		UserID: userID,
+		PostID: ulid.Make().String(),
+		Data:   data,
+	})
+	if err != nil {
 		return nil, fmt.Errorf("error creating: %w", err)
 	}
 
 	return &storage.Record{
-		UserID:    userID,
-		PostID:    postID,
-		Data:      data,
-		CreatedAt: now,
-		UpdatedAt: now,
+		UserID:    post.UserID,
+		PostID:    post.PostID,
+		Data:      post.Data,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
 	}, nil
 }
 
@@ -72,15 +77,24 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 	ctx, span := p.tracer.Start(ctx, "postgres.Read")
 	defer span.End()
 
-	row := p.db.QueryRowContext(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1 AND post_id = $2", userID, postID)
-	var record storage.Record
-	if err := row.Scan(&record.UserID, &record.PostID, &record.Data, &record.CreatedAt, &record.UpdatedAt); errors.Is(err, sql.ErrNoRows) {
-		return nil, storage.ErrPostDoesNotExist
-	} else if err != nil {
+	post, err := p.queries.Read(ctx, db.ReadParams{
+		UserID: userID,
+		PostID: postID,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, storage.ErrPostDoesNotExist
+		}
 		return nil, fmt.Errorf("error reading: %w", err)
 	}
 
-	return &record, nil
+	return &storage.Record{
+		UserID:    post.UserID,
+		PostID:    post.PostID,
+		Data:      post.Data,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
+	}, nil
 }
 
 func (p *Postgres) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
@@ -115,26 +129,21 @@ func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*st
 	ctx, span := p.tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
-	record, err := p.Read(ctx, userID, postID)
+	post, err := p.queries.Upsert(ctx, db.UpsertParams{
+		UserID: userID,
+		PostID: postID,
+		Data:   data,
+	})
 	if err != nil {
-		if errors.Is(err, storage.ErrPostDoesNotExist) {
-			return nil, err
-		}
-		return nil, fmt.Errorf("error updating: %w", err)
-	}
-
-	now := time.Now()
-	stmt := "INSERT INTO post VALUES ($1, $2, $3, $4, $5) ON CONFLICT (user_id, post_id) DO UPDATE SET data = $3, updated_at = $5"
-	if _, err := p.db.ExecContext(ctx, stmt, userID, postID, data, now, now); err != nil {
 		return nil, fmt.Errorf("error updating: %w", err)
 	}
 
 	return &storage.Record{
-		UserID:    userID,
-		PostID:    postID,
-		Data:      data,
-		CreatedAt: record.CreatedAt,
-		UpdatedAt: now,
+		UserID:    post.UserID,
+		PostID:    post.PostID,
+		Data:      post.Data,
+		CreatedAt: post.CreatedAt,
+		UpdatedAt: post.UpdatedAt,
 	}, nil
 }
 
@@ -142,7 +151,11 @@ func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
 	ctx, span := p.tracer.Start(ctx, "postgres.Delete")
 	defer span.End()
 
-	if _, err := p.db.ExecContext(ctx, "DELETE FROM post WHERE user_id = $1 AND post_id = $2", userID, postID); err != nil {
+	err := p.queries.Delete(ctx, db.DeleteParams{
+		UserID: userID,
+		PostID: postID,
+	})
+	if err != nil {
 		return fmt.Errorf("error deleting: %w", err)
 	}
 
