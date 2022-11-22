@@ -5,11 +5,11 @@ go 1.19
 require (
 	github.com/bufbuild/connect-go v1.1.0
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
-	github.com/cenkalti/backoff/v4 v4.1.3
+	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/envoyproxy/protoc-gen-validate v0.9.0
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/golang-lru v0.5.4
-	github.com/jackc/pgx/v5 v5.1.0
+	github.com/hashicorp/golang-lru/v2 v2.0.1
+	github.com/jackc/pgx/v5 v5.1.1
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/sethvargo/go-envconfig v0.8.2
 	github.com/stretchr/testify v1.8.1
@@ -63,7 +63,7 @@ require (
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/crypto v0.2.0 // indirect
+	golang.org/x/crypto v0.3.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
 	golang.org/x/sys v0.2.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
