@@ -4,16 +4,16 @@ import (
 	"context"
 	"fmt"
 
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 type CachingStorage struct {
-	cache   *lru.Cache
+	cache   *lru.Cache[string, *Record]
 	storage Storage
 }
 
 func NewCachingStorage(storage Storage, size int) (*CachingStorage, error) {
-	cache, err := lru.New(size)
+	cache, err := lru.New[string, *Record](size)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +37,7 @@ func (c *CachingStorage) Create(ctx context.Context, userID, data string) (*Reco
 
 func (c *CachingStorage) Read(ctx context.Context, userID, postID string) (*Record, error) {
 	if record, ok := c.cache.Get(createKey(userID, postID)); ok {
-		return record.(*Record), nil
+		return record, nil
 	}
 
 	return c.storage.Read(ctx, userID, postID)
