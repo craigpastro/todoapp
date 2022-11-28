@@ -3,7 +3,7 @@ module github.com/craigpastro/crudapp
 go 1.19
 
 require (
-	github.com/bufbuild/connect-go v1.1.0
+	github.com/bufbuild/connect-go v1.2.0
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/envoyproxy/protoc-gen-validate v0.9.0
