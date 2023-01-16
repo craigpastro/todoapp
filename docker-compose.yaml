@@ -21,14 +21,7 @@ services:
     volumes:
       - "${PWD}/telemetry/otel-config.yaml:/etc/otel-local-config.yaml"
     depends_on:
-      - zipkin
       - jaeger
-  
-  zipkin:
-    image: openzipkin/zipkin:latest
-    container_name: zipkin
-    ports:
-      - "9411:9411"
 
   jaeger:
     image: jaegertracing/all-in-one:latest

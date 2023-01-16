@@ -9,9 +9,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/internal/gen/db"
 	"github.com/craigpastro/crudapp/internal/storage"
+	"github.com/craigpastro/crudapp/internal/tracer"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/oklog/ulid/v2"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -20,14 +20,12 @@ var _ storage.Storage = (*Postgres)(nil)
 type Postgres struct {
 	queries *db.Queries
 	db      *sql.DB // still needed for streaming read all
-	tracer  trace.Tracer
 }
 
-func New(sqlDB *sql.DB, tracer trace.Tracer) *Postgres {
+func New(sqlDB *sql.DB) *Postgres {
 	return &Postgres{
 		queries: db.New(sqlDB),
 		db:      sqlDB,
-		tracer:  tracer,
 	}
 }
 
@@ -52,7 +50,7 @@ func CreateDB(ctx context.Context, connString string, logger *zap.Logger) (*sql.
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.Create")
+	ctx, span := tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
 	post, err := p.queries.Create(ctx, db.CreateParams{
@@ -74,7 +72,7 @@ func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Re
 }
 
 func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.Read")
+	ctx, span := tracer.Start(ctx, "postgres.Read")
 	defer span.End()
 
 	post, err := p.queries.Read(ctx, db.ReadParams{
@@ -98,7 +96,7 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 }
 
 func (p *Postgres) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.ReadAll")
+	ctx, span := tracer.Start(ctx, "postgres.ReadAll")
 	defer span.End()
 
 	rows, err := p.db.QueryContext(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1", userID)
@@ -126,7 +124,7 @@ func (i *recordInterator) Close(_ context.Context) {
 }
 
 func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
-	ctx, span := p.tracer.Start(ctx, "postgres.Upsert")
+	ctx, span := tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
 	post, err := p.queries.Upsert(ctx, db.UpsertParams{
@@ -148,7 +146,7 @@ func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*st
 }
 
 func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
-	ctx, span := p.tracer.Start(ctx, "postgres.Delete")
+	ctx, span := tracer.Start(ctx, "postgres.Delete")
 	defer span.End()
 
 	err := p.queries.Delete(ctx, db.DeleteParams{

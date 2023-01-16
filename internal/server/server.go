@@ -8,7 +8,7 @@ import (
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/telemetry"
+	"github.com/craigpastro/crudapp/internal/tracer"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,13 +18,11 @@ type server struct {
 	crudappv1connect.UnimplementedCrudAppServiceHandler
 
 	Storage storage.Storage
-	Tracer  trace.Tracer
 }
 
-func NewServer(storage storage.Storage, tracer trace.Tracer) *server {
+func NewServer(storage storage.Storage) *server {
 	return &server{
 		Storage: storage,
-		Tracer:  tracer,
 	}
 }
 
@@ -46,12 +44,12 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 	}
 
 	userID := msg.GetUserId()
-	ctx, span := s.Tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
+	ctx, span := tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
 	record, err := s.Storage.Create(ctx, userID, msg.GetData())
 	if err != nil {
-		telemetry.TraceError(span, err)
+		tracer.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -69,12 +67,12 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
-	ctx, span := s.Tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
+	ctx, span := tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
 	record, err := s.Storage.Read(ctx, userID, postID)
 	if err != nil {
-		telemetry.TraceError(span, err)
+		tracer.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -94,19 +92,19 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	}
 
 	userID := msg.GetUserId()
-	ctx, span := s.Tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
+	ctx, span := tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
 	iter, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
-		telemetry.TraceError(span, err)
+		tracer.TraceError(span, err)
 		return errors.HandleStorageError(err)
 	}
 
 	for iter.Next(ctx) {
 		var record storage.Record
 		if err := iter.Get(&record); err != nil {
-			telemetry.TraceError(span, err)
+			tracer.TraceError(span, err)
 			return errors.HandleStorageError(err)
 		}
 
@@ -136,12 +134,12 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 
-	ctx, span := s.Tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
+	ctx, span := tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
 	record, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
 	if err != nil {
-		telemetry.TraceError(span, err)
+		tracer.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -159,11 +157,11 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteReque
 
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
-	ctx, span := s.Tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
+	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
 	if err := s.Storage.Delete(ctx, userID, postID); err != nil {
-		telemetry.TraceError(span, err)
+		tracer.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 

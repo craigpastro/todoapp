@@ -14,8 +14,9 @@ import (
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
-	"github.com/craigpastro/crudapp/internal/telemetry"
+	"github.com/craigpastro/crudapp/internal/tracer"
 	"github.com/sethvargo/go-envconfig"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -58,18 +59,22 @@ func main() {
 func run(ctx context.Context, cfg *config) error {
 	logger := newLogger(cfg)
 
-	tracer, err := telemetry.NewTracer(ctx, telemetry.TracerConfig{
-		Enabled:        cfg.TraceEnabled,
-		ServiceName:    cfg.ServiceName,
-		ServiceVersion: cfg.ServiceVersion,
-		Environment:    cfg.ServiceEnvironment,
-		Endpoint:       cfg.TraceProviderURL,
-	})
-	if err != nil {
-		logger.Fatal("error initializing tracer", zap.Error(err))
+	var tp trace.TracerProvider
+	if cfg.TraceEnabled {
+		sdktp := tracer.MustNewTracerProvider(ctx, tracer.TracerConfig{
+			ServiceName:    cfg.ServiceName,
+			ServiceVersion: cfg.ServiceVersion,
+			Environment:    cfg.ServiceEnvironment,
+			Endpoint:       cfg.TraceProviderURL,
+		})
+		defer sdktp.Shutdown(context.Background())
+		tp = sdktp
+	} else {
+		tp = trace.NewNoopTracerProvider()
 	}
+	otel.SetTracerProvider(tp)
 
-	storage, err := newStorage(ctx, logger, tracer, cfg)
+	storage, err := newStorage(ctx, logger, cfg)
 	if err != nil {
 		logger.Fatal("error initializing storage", zap.Error(err))
 	}
@@ -83,7 +88,7 @@ func run(ctx context.Context, cfg *config) error {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(storage, tracer),
+		server.NewServer(storage),
 		interceptors,
 	))
 
@@ -111,17 +116,17 @@ func newLogger(cfg *config) *zap.Logger {
 	))
 }
 
-func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *config) (storage.Storage, error) {
+func newStorage(ctx context.Context, logger *zap.Logger, cfg *config) (storage.Storage, error) {
 	var s storage.Storage
 	switch cfg.StorageType {
 	case "memory":
-		s = memory.New(tracer)
+		s = memory.New()
 	case "postgres":
 		db, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
 		if err != nil {
 			return nil, err
 		}
-		s = postgres.New(db, tracer)
+		s = postgres.New(db)
 	default:
 		return nil, fmt.Errorf("undefined storage kind: %s", cfg.StorageType)
 	}

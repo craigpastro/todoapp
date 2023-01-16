@@ -1,4 +1,4 @@
-package telemetry
+package tracer
 
 import (
 	"context"
@@ -14,6 +14,8 @@ import (
 	"google.golang.org/grpc"
 )
 
+var name string
+
 type TracerConfig struct {
 	Enabled        bool
 	ServiceName    string
@@ -22,14 +24,8 @@ type TracerConfig struct {
 	Endpoint       string
 }
 
-func NewNoopTracer() trace.Tracer {
-	return trace.NewNoopTracerProvider().Tracer("noop")
-}
-
-func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
-	if !config.Enabled {
-		return NewNoopTracer(), nil
-	}
+func MustNewTracerProvider(ctx context.Context, config TracerConfig) *sdktrace.TracerProvider {
+	name = config.ServiceName
 
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
@@ -39,7 +35,7 @@ func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
 
 	exp, err := otlptrace.New(ctx, client)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	resource, err := resource.Merge(
@@ -52,17 +48,18 @@ func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
 		),
 	)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
-	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+	return sdktrace.NewTracerProvider(
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(0.5)),
 		sdktrace.WithResource(resource),
 		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
 	)
-	otel.SetTracerProvider(tp)
+}
 
-	return tp.Tracer(config.ServiceName), nil
+func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
+	return otel.Tracer(name).Start(ctx, spanName, opts...)
 }
 
 func TraceError(span trace.Span, err error) {
