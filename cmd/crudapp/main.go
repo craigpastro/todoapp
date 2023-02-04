@@ -54,12 +54,14 @@ func main() {
 	run(context.Background(), &cfg)
 }
 
+// run runs the server. It takes a context. You may cancel the context to
+// gracefully shutdown the server.
 func run(ctx context.Context, cfg *config) {
 	logr := newLogger(cfg)
 
 	tp := sdktrace.NewTracerProvider()
 	if cfg.TraceEnabled {
-		tp = instrumentation.MustNewTracerProvider(ctx, instrumentation.TracerConfig{
+		tp = instrumentation.MustNewTracerProvider(instrumentation.TracerConfig{
 			ServiceName:    cfg.ServiceName,
 			ServiceVersion: cfg.ServiceVersion,
 			Environment:    cfg.ServiceEnvironment,
@@ -67,10 +69,7 @@ func run(ctx context.Context, cfg *config) {
 		})
 	}
 
-	storage, err := newStorage(ctx, logr, cfg)
-	if err != nil {
-		logr.Fatal("error initializing storage", zap.Error(err))
-	}
+	storage := mustNewStorage(ctx, logr, cfg)
 
 	interceptors := connect.WithInterceptors(
 		otelconnect.NewInterceptor(),
@@ -142,20 +141,13 @@ func newLogger(cfg *config) *zap.Logger {
 	))
 }
 
-func newStorage(ctx context.Context, logger *zap.Logger, cfg *config) (storage.Storage, error) {
-	var s storage.Storage
+func mustNewStorage(ctx context.Context, logger *zap.Logger, cfg *config) storage.Storage {
 	switch cfg.StorageType {
 	case "memory":
-		s = memory.New()
+		return memory.New()
 	case "postgres":
-		db, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
-		if err != nil {
-			return nil, err
-		}
-		s = postgres.New(db)
+		return postgres.MustNew(ctx, cfg.PostgresURL, logger)
 	default:
-		return nil, fmt.Errorf("undefined storage kind: %s", cfg.StorageType)
+		panic(fmt.Sprintf("undefined storage type: %s", cfg.StorageType))
 	}
-
-	return storage.NewCachingStorage(s, cfg.CacheSize)
 }

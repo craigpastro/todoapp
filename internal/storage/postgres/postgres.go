@@ -24,31 +24,33 @@ type Postgres struct {
 
 var _ storage.Storage = (*Postgres)(nil)
 
-func New(sqlDB *sql.DB) *Postgres {
+func MustNew(ctx context.Context, connString string, logr *zap.Logger) *Postgres {
+	sqlDB := Connect(ctx, connString, logr)
+
 	return &Postgres{
 		queries: db.New(sqlDB),
 		db:      sqlDB,
 	}
 }
 
-func CreateDB(ctx context.Context, connString string, logger *zap.Logger) (*sql.DB, error) {
+func Connect(ctx context.Context, connString string, logr *zap.Logger) *sql.DB {
 	db, err := sql.Open("pgx", connString)
 	if err != nil {
-		return nil, fmt.Errorf("error opening Postgres: %w", err)
+		panic(fmt.Sprintf("error connecting to Postgres: %s", err))
 	}
 
 	err = backoff.Retry(func() error {
 		if err = db.Ping(); err != nil {
-			logger.Info("waiting for Postgres")
+			logr.Info("waiting for Postgres")
 			return err
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
+		panic(fmt.Sprintf("error connecting to Postgres: %s", err))
 	}
 
-	return db, nil
+	return db
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {

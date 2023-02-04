@@ -2,6 +2,7 @@ package instrumentation
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
@@ -21,12 +22,15 @@ type TracerConfig struct {
 	Endpoint       string
 }
 
-func MustNewTracerProvider(ctx context.Context, cfg TracerConfig) *sdktrace.TracerProvider {
+func MustNewTracerProvider(cfg TracerConfig) *sdktrace.TracerProvider {
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
 	exp, err := otlptrace.New(ctx, client)
 	if err != nil {
