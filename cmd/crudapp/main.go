@@ -5,18 +5,23 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/bufbuild/connect-go"
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
+	otelconnect "github.com/bufbuild/connect-opentelemetry-go"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/server"
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
-	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/sethvargo/go-envconfig"
-	"go.opentelemetry.io/otel/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/net/http2"
@@ -46,36 +51,30 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	if err := run(ctx, &cfg); err != nil {
-		log.Fatal(err)
-	}
+	run(context.Background(), &cfg)
 }
 
-func run(ctx context.Context, cfg *config) error {
-	logger := newLogger(cfg)
+func run(ctx context.Context, cfg *config) {
+	logr := newLogger(cfg)
 
-	tracer, err := telemetry.NewTracer(ctx, telemetry.TracerConfig{
-		Enabled:        cfg.TraceEnabled,
-		ServiceName:    cfg.ServiceName,
-		ServiceVersion: cfg.ServiceVersion,
-		Environment:    cfg.ServiceEnvironment,
-		Endpoint:       cfg.TraceProviderURL,
-	})
-	if err != nil {
-		logger.Fatal("error initializing tracer", zap.Error(err))
+	tp := sdktrace.NewTracerProvider()
+	if cfg.TraceEnabled {
+		tp = instrumentation.MustNewTracerProvider(ctx, instrumentation.TracerConfig{
+			ServiceName:    cfg.ServiceName,
+			ServiceVersion: cfg.ServiceVersion,
+			Environment:    cfg.ServiceEnvironment,
+			Endpoint:       cfg.TraceProviderURL,
+		})
 	}
 
-	storage, err := newStorage(ctx, logger, tracer, cfg)
+	storage, err := newStorage(ctx, logr, cfg)
 	if err != nil {
-		logger.Fatal("error initializing storage", zap.Error(err))
+		logr.Fatal("error initializing storage", zap.Error(err))
 	}
 
 	interceptors := connect.WithInterceptors(
-		middleware.NewLoggingInterceptor(logger),
+		otelconnect.NewInterceptor(),
+		middleware.NewLoggingInterceptor(logr),
 	)
 
 	mux := http.NewServeMux()
@@ -83,23 +82,55 @@ func run(ctx context.Context, cfg *config) error {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(storage, tracer),
+		server.NewServer(storage),
 		interceptors,
 	))
 
-	logger.Info(fmt.Sprintf("server starting on %s (storage type=%s)", cfg.Addr, cfg.StorageType))
+	srv := &http.Server{
+		Addr:              cfg.Addr,
+		ReadHeaderTimeout: 3 * time.Second,
+		Handler:           h2c.NewHandler(mux, &http2.Server{}),
+	}
 
-	return http.ListenAndServe(
-		":8080",
-		h2c.NewHandler(mux, &http2.Server{}),
-	)
+	go func() {
+		logr.Info(fmt.Sprintf("app starting on %s", cfg.Addr))
+
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal("failed to start app", err)
+			os.Exit(1)
+		}
+	}()
+
+	// Shutdown stuff
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	select {
+	case <-done:
+	case <-ctx.Done():
+	}
+	logr.Info("app attempting to shutdown gracefully")
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctx); err != nil {
+		logr.Error("app shutdown failed", zap.Error(err))
+		os.Exit(1)
+	}
+
+	_ = tp.ForceFlush(ctx)
+	_ = tp.Shutdown(ctx)
+
+	logr.Info("app shutdown gracefully. bye 👋")
 }
 
 func newLogger(cfg *config) *zap.Logger {
-	zapCfg := zap.NewProductionConfig()
-	if cfg.LogFormat == "console" {
-		zapCfg.Encoding = "console"
+	zapCfg := zap.NewDevelopmentConfig()
+	if cfg.LogFormat == "json" {
+		zapCfg.Encoding = "json"
 	}
+
 	return zap.Must(zapCfg.Build(
 		zap.AddCaller(),
 		zap.AddStacktrace(zapcore.PanicLevel),
@@ -111,17 +142,17 @@ func newLogger(cfg *config) *zap.Logger {
 	))
 }
 
-func newStorage(ctx context.Context, logger *zap.Logger, tracer trace.Tracer, cfg *config) (storage.Storage, error) {
+func newStorage(ctx context.Context, logger *zap.Logger, cfg *config) (storage.Storage, error) {
 	var s storage.Storage
 	switch cfg.StorageType {
 	case "memory":
-		s = memory.New(tracer)
+		s = memory.New()
 	case "postgres":
 		db, err := postgres.CreateDB(ctx, cfg.PostgresURL, logger)
 		if err != nil {
 			return nil, err
 		}
-		s = postgres.New(db, tracer)
+		s = postgres.New(db)
 	default:
 		return nil, fmt.Errorf("undefined storage kind: %s", cfg.StorageType)
 	}

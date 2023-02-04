@@ -12,7 +12,6 @@ import (
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
-	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 )
@@ -23,10 +22,9 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	tracer := telemetry.NewNoopTracer()
-	storage := memory.New(tracer)
+	storage := memory.New()
 	mux := http.NewServeMux()
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(storage, tracer)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(storage)))
 
 	go func() {
 		if err := http.ListenAndServe(addr, mux); err != nil {

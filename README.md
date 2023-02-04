@@ -4,9 +4,8 @@ A simple CRUD app to demonstrate concepts.
 
 ## Things to do
 
-- Use sqlc for Postgres (when they implement an iterator over rows https://github.com/kyleconroy/sqlc/issues/720)
 - Wrap errors
-- Implement preshared key auth
+- Add an API key
 - Add health check
 - Add migrate command
 
@@ -105,4 +104,4 @@ curl -XPOST -i http://127.0.0.1:8080/crudapp.v1.CrudAppService/Delete \
 
 ## Tracing
 
-If you `docker compose up -d` then you should have [Jaeger](https://www.jaegertracing.io/) and [Zipkin](https://zipkin.io/) running. You can access Jaeger at http://localhost:16686 and Zipkin at http://localhost:9411.
+If you `docker compose up -d` then you should have [Jaeger](https://www.jaegertracing.io/) running. You can access Jaeger at http://localhost:16686.

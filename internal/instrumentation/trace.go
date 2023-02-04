@@ -1,4 +1,4 @@
-package telemetry
+package instrumentation
 
 import (
 	"context"
@@ -15,54 +15,46 @@ import (
 )
 
 type TracerConfig struct {
-	Enabled        bool
 	ServiceName    string
 	ServiceVersion string
 	Environment    string
 	Endpoint       string
 }
 
-func NewNoopTracer() trace.Tracer {
-	return trace.NewNoopTracerProvider().Tracer("noop")
-}
-
-func NewTracer(ctx context.Context, config TracerConfig) (trace.Tracer, error) {
-	if !config.Enabled {
-		return NewNoopTracer(), nil
-	}
-
+func MustNewTracerProvider(ctx context.Context, cfg TracerConfig) *sdktrace.TracerProvider {
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(config.Endpoint),
+		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
 
 	exp, err := otlptrace.New(ctx, client)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	resource, err := resource.Merge(
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(config.ServiceName),
-			semconv.ServiceVersionKey.String(config.ServiceVersion),
-			semconv.DeploymentEnvironmentKey.String(config.Environment),
+			semconv.ServiceNameKey.String(cfg.ServiceName),
+			semconv.ServiceVersionKey.String(cfg.ServiceVersion),
+			semconv.DeploymentEnvironmentKey.String(cfg.Environment),
 		),
 	)
 	if err != nil {
-		return nil, err
+		panic(err)
 	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(0.5)),
 		sdktrace.WithResource(resource),
 		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
 	)
+
 	otel.SetTracerProvider(tp)
 
-	return tp.Tracer(config.ServiceName), nil
+	return tp
 }
 
 func TraceError(span trace.Span, err error) {

@@ -10,7 +10,6 @@ import (
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/craigpastro/crudapp/internal/storage/memory"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
-	"github.com/craigpastro/crudapp/internal/telemetry"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/oklog/ulid/v2"
@@ -55,14 +54,13 @@ func TestStorage(t *testing.T) {
 func newMemory() storageTest {
 	return storageTest{
 		name:    "memory",
-		storage: memory.New(telemetry.NewNoopTracer()),
+		storage: memory.New(),
 	}
 }
 
 func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
 	logger := zap.NewNop()
-	tracer := telemetry.NewNoopTracer()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
@@ -94,7 +92,7 @@ func newPostgres(t *testing.T) storageTest {
 
 	return storageTest{
 		name:      "postgres",
-		storage:   postgres.New(db, tracer),
+		storage:   postgres.New(db),
 		container: container,
 	}
 }
