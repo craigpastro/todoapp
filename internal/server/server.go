@@ -7,12 +7,15 @@ import (
 	"github.com/craigpastro/crudapp/internal/errors"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/tracer"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+var tracer = otel.Tracer("internal/server")
 
 type server struct {
 	crudappv1connect.UnimplementedCrudAppServiceHandler
@@ -49,7 +52,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 
 	record, err := s.Storage.Create(ctx, userID, msg.GetData())
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -72,7 +75,7 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 
 	record, err := s.Storage.Read(ctx, userID, postID)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -97,14 +100,14 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 
 	iter, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return errors.HandleStorageError(err)
 	}
 
 	for iter.Next(ctx) {
 		var record storage.Record
 		if err := iter.Get(&record); err != nil {
-			tracer.TraceError(span, err)
+			instrumentation.TraceError(span, err)
 			return errors.HandleStorageError(err)
 		}
 
@@ -139,7 +142,7 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 
 	record, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
 	if err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
@@ -161,7 +164,7 @@ func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteReque
 	defer span.End()
 
 	if err := s.Storage.Delete(ctx, userID, postID); err != nil {
-		tracer.TraceError(span, err)
+		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 

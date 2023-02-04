@@ -6,15 +6,17 @@ import (
 	"time"
 
 	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/tracer"
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/otel"
 )
 
-var _ storage.Storage = (*MemoryDB)(nil)
+var tracer = otel.Tracer("internal/storage/memory")
 
 type MemoryDB struct {
 	store map[string]map[string]*storage.Record
 }
+
+var _ storage.Storage = (*MemoryDB)(nil)
 
 func New() *MemoryDB {
 	return &MemoryDB{

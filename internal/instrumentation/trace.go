@@ -1,4 +1,4 @@
-package tracer
+package instrumentation
 
 import (
 	"context"
@@ -14,22 +14,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-var name string
-
 type TracerConfig struct {
-	Enabled        bool
 	ServiceName    string
 	ServiceVersion string
 	Environment    string
 	Endpoint       string
 }
 
-func MustNewTracerProvider(ctx context.Context, config TracerConfig) *sdktrace.TracerProvider {
-	name = config.ServiceName
-
+func MustNewTracerProvider(ctx context.Context, cfg TracerConfig) *sdktrace.TracerProvider {
 	client := otlptracegrpc.NewClient(
 		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(config.Endpoint),
+		otlptracegrpc.WithEndpoint(cfg.Endpoint),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
 
@@ -42,24 +37,24 @@ func MustNewTracerProvider(ctx context.Context, config TracerConfig) *sdktrace.T
 		resource.Default(),
 		resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(config.ServiceName),
-			semconv.ServiceVersionKey.String(config.ServiceVersion),
-			semconv.DeploymentEnvironmentKey.String(config.Environment),
+			semconv.ServiceNameKey.String(cfg.ServiceName),
+			semconv.ServiceVersionKey.String(cfg.ServiceVersion),
+			semconv.DeploymentEnvironmentKey.String(cfg.Environment),
 		),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	return sdktrace.NewTracerProvider(
+	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(0.5)),
 		sdktrace.WithResource(resource),
 		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
 	)
-}
 
-func Start(ctx context.Context, spanName string, opts ...trace.SpanStartOption) (context.Context, trace.Span) {
-	return otel.Tracer(name).Start(ctx, spanName, opts...)
+	otel.SetTracerProvider(tp)
+
+	return tp
 }
 
 func TraceError(span trace.Span, err error) {

@@ -9,18 +9,20 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/craigpastro/crudapp/internal/gen/db"
 	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/tracer"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/oklog/ulid/v2"
+	"go.opentelemetry.io/otel"
 	"go.uber.org/zap"
 )
 
-var _ storage.Storage = (*Postgres)(nil)
+var tracer = otel.Tracer("internal/storage/postgres")
 
 type Postgres struct {
 	queries *db.Queries
 	db      *sql.DB // still needed for streaming read all
 }
+
+var _ storage.Storage = (*Postgres)(nil)
 
 func New(sqlDB *sql.DB) *Postgres {
 	return &Postgres{
