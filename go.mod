@@ -3,7 +3,7 @@ module github.com/craigpastro/crudapp
 go 1.19
 
 require (
-	github.com/bufbuild/connect-go v1.5.0
+	github.com/bufbuild/connect-go v1.5.1
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
 	github.com/bufbuild/connect-opentelemetry-go v0.0.0-20230130231708-4f80ac84c3bb
 	github.com/cenkalti/backoff/v4 v4.2.0
