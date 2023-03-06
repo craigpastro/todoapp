@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/bufbuild/connect-go v1.5.2
 	github.com/bufbuild/connect-grpcreflect-go v1.0.0
-	github.com/bufbuild/connect-opentelemetry-go v0.0.0-20230130231708-4f80ac84c3bb
+	github.com/bufbuild/connect-opentelemetry-go v0.1.0
 	github.com/cenkalti/backoff/v4 v4.2.0
 	github.com/envoyproxy/protoc-gen-validate v0.9.1
 	github.com/google/go-cmp v0.5.9
@@ -59,7 +59,7 @@ require (
 	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.14.0 // indirect
-	go.opentelemetry.io/otel/metric v0.35.0 // indirect
+	go.opentelemetry.io/otel/metric v0.37.0 // indirect
 	go.opentelemetry.io/proto/otlp v0.19.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
