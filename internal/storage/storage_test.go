@@ -60,7 +60,7 @@ func newMemory() storageTest {
 
 func newPostgres(t *testing.T) storageTest {
 	ctx := context.Background()
-	logger := zap.NewNop()
+	logr := zap.NewNop()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
@@ -77,8 +77,10 @@ func newPostgres(t *testing.T) storageTest {
 	port, err := container.MappedPort(ctx, "5432/tcp")
 	require.NoError(t, err)
 
-	db, err := postgres.CreateDB(ctx, fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port()), logger)
-	require.NoError(t, err)
+	connString := fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())
+
+	db := postgres.Connect(ctx, connString, logr)
+	defer db.Close()
 
 	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS post (
 		user_id TEXT NOT NULL,
@@ -92,7 +94,7 @@ func newPostgres(t *testing.T) storageTest {
 
 	return storageTest{
 		name:      "postgres",
-		storage:   postgres.New(db),
+		storage:   postgres.MustNew(ctx, connString, logr),
 		container: container,
 	}
 }
