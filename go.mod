@@ -14,7 +14,7 @@ require (
 	github.com/oklog/ulid/v2 v2.1.0
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.19.0
+	github.com/testcontainers/testcontainers-go v0.20.1
 	go.opentelemetry.io/otel v1.15.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.15.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.13.0
@@ -34,7 +34,7 @@ require (
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
-	github.com/docker/docker v23.0.3+incompatible // indirect
+	github.com/docker/docker v23.0.5+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/go-logr/logr v1.2.4 // indirect
@@ -43,6 +43,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.13.0 // indirect
+	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/klauspost/compress v1.11.13 // indirect
