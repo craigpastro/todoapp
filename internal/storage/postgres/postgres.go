@@ -3,61 +3,93 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/cenkalti/backoff/v4"
-	"github.com/craigpastro/crudapp/internal/gen/db"
+	"github.com/craigpastro/crudapp/internal/gen/sqlc"
 	"github.com/craigpastro/crudapp/internal/storage"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/oklog/ulid/v2"
+	"github.com/pressly/goose/v3"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 )
+
+//go:embed migrations/*
+var fs embed.FS
 
 var tracer = otel.Tracer("internal/storage/postgres")
 
 type Postgres struct {
-	queries *db.Queries
-	db      *sql.DB // still needed for streaming read all
+	db      *sql.DB
+	queries *sqlc.Queries
 }
 
 var _ storage.Storage = (*Postgres)(nil)
 
-func MustNew(ctx context.Context, connString string, logr *zap.Logger) *Postgres {
-	sqlDB := Connect(ctx, connString, logr)
-
-	return &Postgres{
-		queries: db.New(sqlDB),
-		db:      sqlDB,
-	}
-}
-
-func Connect(ctx context.Context, connString string, logr *zap.Logger) *sql.DB {
+func New(connString string, migrate bool) (*Postgres, error) {
 	db, err := sql.Open("pgx", connString)
 	if err != nil {
-		panic(fmt.Sprintf("error connecting to Postgres: %s", err))
+		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
 	}
 
 	err = backoff.Retry(func() error {
 		if err = db.Ping(); err != nil {
-			logr.Info("waiting for Postgres")
+			log.Println("waiting for Postgres")
 			return err
 		}
 		return nil
 	}, backoff.NewExponentialBackOff())
 	if err != nil {
-		panic(fmt.Sprintf("error connecting to Postgres: %s", err))
+		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
 	}
 
-	return db
+	if migrate {
+		if err := Migrate(db); err != nil {
+			return nil, err
+		}
+	}
+
+	return &Postgres{
+		queries: sqlc.New(db),
+		db:      db,
+	}, nil
+}
+
+func MustNew(connString string, migrate bool) *Postgres {
+	p, err := New(connString, migrate)
+	if err != nil {
+		panic(err)
+	}
+
+	return p
+}
+
+func Migrate(db *sql.DB) error {
+	goose.SetBaseFS(fs)
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		return fmt.Errorf("goose error: %w", err)
+	}
+
+	if err := goose.Up(db, "migrations"); err != nil {
+		return fmt.Errorf("goose error: %w", err)
+	}
+
+	return nil
+}
+
+func (p *Postgres) Close() error {
+	return p.db.Close()
 }
 
 func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
 	ctx, span := tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
-	post, err := p.queries.Create(ctx, db.CreateParams{
+	post, err := p.queries.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
 		PostID: ulid.Make().String(),
 		Data:   data,
@@ -79,7 +111,7 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 	ctx, span := tracer.Start(ctx, "postgres.Read")
 	defer span.End()
 
-	post, err := p.queries.Read(ctx, db.ReadParams{
+	post, err := p.queries.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
 		PostID: postID,
 	})
@@ -131,7 +163,7 @@ func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*st
 	ctx, span := tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
-	post, err := p.queries.Upsert(ctx, db.UpsertParams{
+	post, err := p.queries.Upsert(ctx, sqlc.UpsertParams{
 		UserID: userID,
 		PostID: postID,
 		Data:   data,
@@ -153,7 +185,7 @@ func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
 	ctx, span := tracer.Start(ctx, "postgres.Delete")
 	defer span.End()
 
-	err := p.queries.Delete(ctx, db.DeleteParams{
+	err := p.queries.Delete(ctx, sqlc.DeleteParams{
 		UserID: userID,
 		PostID: postID,
 	})

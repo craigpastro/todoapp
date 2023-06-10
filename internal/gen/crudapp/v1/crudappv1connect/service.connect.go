@@ -25,6 +25,26 @@ const (
 	CrudAppServiceName = "crudapp.v1.CrudAppService"
 )
 
+// These constants are the fully-qualified names of the RPCs defined in this package. They're
+// exposed at runtime as Spec.Procedure and as the final two segments of the HTTP route.
+//
+// Note that these are different from the fully-qualified method names used by
+// google.golang.org/protobuf/reflect/protoreflect. To convert from these constants to
+// reflection-formatted method names, remove the leading slash and convert the remaining slash to a
+// period.
+const (
+	// CrudAppServiceCreateProcedure is the fully-qualified name of the CrudAppService's Create RPC.
+	CrudAppServiceCreateProcedure = "/crudapp.v1.CrudAppService/Create"
+	// CrudAppServiceReadProcedure is the fully-qualified name of the CrudAppService's Read RPC.
+	CrudAppServiceReadProcedure = "/crudapp.v1.CrudAppService/Read"
+	// CrudAppServiceReadAllProcedure is the fully-qualified name of the CrudAppService's ReadAll RPC.
+	CrudAppServiceReadAllProcedure = "/crudapp.v1.CrudAppService/ReadAll"
+	// CrudAppServiceUpsertProcedure is the fully-qualified name of the CrudAppService's Upsert RPC.
+	CrudAppServiceUpsertProcedure = "/crudapp.v1.CrudAppService/Upsert"
+	// CrudAppServiceDeleteProcedure is the fully-qualified name of the CrudAppService's Delete RPC.
+	CrudAppServiceDeleteProcedure = "/crudapp.v1.CrudAppService/Delete"
+)
+
 // CrudAppServiceClient is a client for the crudapp.v1.CrudAppService service.
 type CrudAppServiceClient interface {
 	Create(context.Context, *connect_go.Request[v1.CreateRequest]) (*connect_go.Response[v1.CreateResponse], error)
@@ -46,27 +66,27 @@ func NewCrudAppServiceClient(httpClient connect_go.HTTPClient, baseURL string, o
 	return &crudAppServiceClient{
 		create: connect_go.NewClient[v1.CreateRequest, v1.CreateResponse](
 			httpClient,
-			baseURL+"/crudapp.v1.CrudAppService/Create",
+			baseURL+CrudAppServiceCreateProcedure,
 			opts...,
 		),
 		read: connect_go.NewClient[v1.ReadRequest, v1.ReadResponse](
 			httpClient,
-			baseURL+"/crudapp.v1.CrudAppService/Read",
+			baseURL+CrudAppServiceReadProcedure,
 			opts...,
 		),
 		readAll: connect_go.NewClient[v1.ReadAllRequest, v1.ReadAllResponse](
 			httpClient,
-			baseURL+"/crudapp.v1.CrudAppService/ReadAll",
+			baseURL+CrudAppServiceReadAllProcedure,
 			opts...,
 		),
 		upsert: connect_go.NewClient[v1.UpsertRequest, v1.UpsertResponse](
 			httpClient,
-			baseURL+"/crudapp.v1.CrudAppService/Upsert",
+			baseURL+CrudAppServiceUpsertProcedure,
 			opts...,
 		),
 		delete: connect_go.NewClient[v1.DeleteRequest, v1.DeleteResponse](
 			httpClient,
-			baseURL+"/crudapp.v1.CrudAppService/Delete",
+			baseURL+CrudAppServiceDeleteProcedure,
 			opts...,
 		),
 	}
@@ -122,28 +142,28 @@ type CrudAppServiceHandler interface {
 // and JSON codecs. They also support gzip compression.
 func NewCrudAppServiceHandler(svc CrudAppServiceHandler, opts ...connect_go.HandlerOption) (string, http.Handler) {
 	mux := http.NewServeMux()
-	mux.Handle("/crudapp.v1.CrudAppService/Create", connect_go.NewUnaryHandler(
-		"/crudapp.v1.CrudAppService/Create",
+	mux.Handle(CrudAppServiceCreateProcedure, connect_go.NewUnaryHandler(
+		CrudAppServiceCreateProcedure,
 		svc.Create,
 		opts...,
 	))
-	mux.Handle("/crudapp.v1.CrudAppService/Read", connect_go.NewUnaryHandler(
-		"/crudapp.v1.CrudAppService/Read",
+	mux.Handle(CrudAppServiceReadProcedure, connect_go.NewUnaryHandler(
+		CrudAppServiceReadProcedure,
 		svc.Read,
 		opts...,
 	))
-	mux.Handle("/crudapp.v1.CrudAppService/ReadAll", connect_go.NewServerStreamHandler(
-		"/crudapp.v1.CrudAppService/ReadAll",
+	mux.Handle(CrudAppServiceReadAllProcedure, connect_go.NewServerStreamHandler(
+		CrudAppServiceReadAllProcedure,
 		svc.ReadAll,
 		opts...,
 	))
-	mux.Handle("/crudapp.v1.CrudAppService/Upsert", connect_go.NewUnaryHandler(
-		"/crudapp.v1.CrudAppService/Upsert",
+	mux.Handle(CrudAppServiceUpsertProcedure, connect_go.NewUnaryHandler(
+		CrudAppServiceUpsertProcedure,
 		svc.Upsert,
 		opts...,
 	))
-	mux.Handle("/crudapp.v1.CrudAppService/Delete", connect_go.NewUnaryHandler(
-		"/crudapp.v1.CrudAppService/Delete",
+	mux.Handle(CrudAppServiceDeleteProcedure, connect_go.NewUnaryHandler(
+		CrudAppServiceDeleteProcedure,
 		svc.Delete,
 		opts...,
 	))

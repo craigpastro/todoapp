@@ -1,66 +1,27 @@
-package storage_test
+package postgres
 
 import (
 	"context"
 	"fmt"
-	"log"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/storage/memory"
-	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"go.uber.org/zap"
 )
 
 const data = "some data"
 
-type storageTest struct {
-	name      string
-	storage   storage.Storage
-	container testcontainers.Container
-}
+var db storage.Storage
 
-func TestStorage(t *testing.T) {
-	storageTests := []storageTest{
-		newMemory(),
-		newPostgres(t),
-	}
-
-	for _, test := range storageTests {
-		t.Run(test.name, func(t *testing.T) {
-			testRead(t, test.storage)
-			testReadNotExists(t, test.storage)
-			testReadAll(t, test.storage)
-			testUpsert(t, test.storage)
-			testDelete(t, test.storage)
-			testDeleteNotExists(t, test.storage)
-
-			if test.container != nil {
-				if err := test.container.Terminate(context.Background()); err != nil {
-					log.Println(err)
-				}
-			}
-		})
-	}
-}
-
-func newMemory() storageTest {
-	return storageTest{
-		name:    "memory",
-		storage: memory.New(),
-	}
-}
-
-func newPostgres(t *testing.T) storageTest {
+func TestMain(m *testing.M) {
 	ctx := context.Background()
-	logr := zap.NewNop()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
@@ -68,43 +29,44 @@ func newPostgres(t *testing.T) storageTest {
 		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "password"},
 		WaitingFor:   wait.ForLog("database system is ready to accept connections"),
 	}
+
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	require.NoError(t, err)
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = container.Terminate(context.Background())
+	}()
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		panic(err)
+	}
 
 	port, err := container.MappedPort(ctx, "5432/tcp")
-	require.NoError(t, err)
-
-	connString := fmt.Sprintf("postgres://postgres:password@localhost:%s/postgres", port.Port())
-
-	db := postgres.Connect(ctx, connString, logr)
-	defer db.Close()
-
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS post (
-		user_id TEXT NOT NULL,
-		post_id TEXT NOT NULL,
-		data TEXT,
-		created_at TIMESTAMPTZ,
-		updated_at TIMESTAMPTZ,
-		PRIMARY KEY (user_id, post_id)
-	)`)
-	require.NoError(t, err)
-
-	return storageTest{
-		name:      "postgres",
-		storage:   postgres.MustNew(ctx, connString, logr),
-		container: container,
+	if err != nil {
+		panic(err)
 	}
+
+	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, port.Port())
+
+	p := MustNew(connString, true)
+	defer p.Close()
+
+	db = p
+
+	os.Exit(m.Run())
 }
 
-func testRead(t *testing.T, storage storage.Storage) {
+func TestRead(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
-	created, err := storage.Create(ctx, userID, data)
+	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
-	record, err := storage.Read(ctx, created.UserID, created.PostID)
+	record, err := db.Read(ctx, created.UserID, created.PostID)
 	require.NoError(t, err)
 
 	require.Equal(t, record.UserID, created.UserID)
@@ -112,7 +74,7 @@ func testRead(t *testing.T, storage storage.Storage) {
 	require.Equal(t, record.Data, data)
 }
 
-func testReadNotExists(t *testing.T, db storage.Storage) {
+func TestReadNotExists(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 
@@ -120,7 +82,7 @@ func testReadNotExists(t *testing.T, db storage.Storage) {
 	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
-func testReadAll(t *testing.T, db storage.Storage) {
+func TestReadAll(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 
@@ -148,7 +110,7 @@ func testReadAll(t *testing.T, db storage.Storage) {
 	require.False(t, iter.Next(ctx))
 }
 
-func testUpsert(t *testing.T, db storage.Storage) {
+func TestUpsert(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 	record, err := db.Create(ctx, userID, data)
@@ -163,7 +125,7 @@ func testUpsert(t *testing.T, db storage.Storage) {
 	require.True(t, record.CreatedAt.Before(updatedRecord.UpdatedAt))
 }
 
-func testDelete(t *testing.T, db storage.Storage) {
+func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 	created, _ := db.Create(ctx, userID, data)
@@ -176,7 +138,7 @@ func testDelete(t *testing.T, db storage.Storage) {
 	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
-func testDeleteNotExists(t *testing.T, db storage.Storage) {
+func TestDeleteNotExists(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 	postID := ulid.Make().String()
