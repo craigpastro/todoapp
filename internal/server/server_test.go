@@ -11,9 +11,11 @@ import (
 	"github.com/bufbuild/connect-go"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
-	"github.com/craigpastro/crudapp/internal/storage/memory"
+	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
@@ -22,9 +24,43 @@ const (
 )
 
 func TestMain(m *testing.M) {
-	storage := memory.New()
+	ctx := context.Background()
+
+	req := testcontainers.ContainerRequest{
+		Image:        "postgres:latest",
+		ExposedPorts: []string{"5432/tcp"},
+		Env:          map[string]string{"POSTGRES_USER": "postgres", "POSTGRES_PASSWORD": "password"},
+		WaitingFor:   wait.ForLog("database system is ready to accept connections"),
+	}
+
+	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: req,
+		Started:          true,
+	})
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		_ = container.Terminate(context.Background())
+	}()
+
+	host, err := container.Host(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	port, err := container.MappedPort(ctx, "5432/tcp")
+	if err != nil {
+		panic(err)
+	}
+
+	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, port.Port())
+
+	db := postgres.MustNew(connString, true)
+	defer db.Close()
+
 	mux := http.NewServeMux()
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(storage)))
+	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(db)))
 
 	go func() {
 		if err := http.ListenAndServe(addr, mux); err != nil {

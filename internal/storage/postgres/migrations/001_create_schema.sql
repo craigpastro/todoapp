@@ -1,3 +1,4 @@
+-- +goose Up
 create table post (
     user_id text not null,
     post_id text not null,
@@ -6,3 +7,6 @@ create table post (
     updated_at timestamptz not null,
     primary key (user_id, post_id)
 );
+
+-- +goose Down
+drop table post;

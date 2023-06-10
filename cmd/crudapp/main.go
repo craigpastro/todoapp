@@ -17,8 +17,6 @@ import (
 	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/server"
-	"github.com/craigpastro/crudapp/internal/storage"
-	"github.com/craigpastro/crudapp/internal/storage/memory"
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/sethvargo/go-envconfig"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -33,16 +31,15 @@ type config struct {
 	ServiceVersion     string `env:"SERVICE_VERSION,default=0.1.0"`
 	ServiceEnvironment string `env:"SERVICE_ENVIRONMENT,default=dev"`
 
-	Addr string `env:"ADDR,default=localhost:8080"`
+	Port int `env:"PORT,default=8080"`
 
 	LogFormat string `env:"LOG_FORMAT,default=console"`
 
 	TraceEnabled     bool   `env:"TRACE_ENABLED,default=false"`
 	TraceProviderURL string `env:"TRACE_PROVIDER_URL,default=localhost:4317"`
 
-	StorageType string `env:"STORAGE_TYPE,default=memory"` // memory, postgres
-	PostgresURL string `env:"POSTGRES_URL,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
-	CacheSize   int    `env:"CACHE_SIZE,default=10000"`
+	PostgresConnString  string `env:"POSTGRES_CONN_STRING,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
+	PostgresAutoMigrate bool   `env:"POSTGRES_AUTOMIGRATE,default=true"`
 }
 
 func main() {
@@ -69,7 +66,7 @@ func run(ctx context.Context, cfg *config) {
 		})
 	}
 
-	storage := mustNewStorage(ctx, logr, cfg)
+	db := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
 
 	interceptors := connect.WithInterceptors(
 		otelconnect.NewInterceptor(),
@@ -81,47 +78,43 @@ func run(ctx context.Context, cfg *config) {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(storage),
+		server.NewServer(db),
 		interceptors,
 	))
 
 	srv := &http.Server{
-		Addr:              cfg.Addr,
+		Addr:              fmt.Sprintf("localhost:%d", cfg.Port),
 		ReadHeaderTimeout: 3 * time.Second,
 		Handler:           h2c.NewHandler(mux, &http2.Server{}),
 	}
 
 	go func() {
-		logr.Info(fmt.Sprintf("app starting on %s", cfg.Addr))
+		logr.Info(fmt.Sprintf("crudapp starting on :%d", cfg.Port))
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("failed to start app", err)
+			log.Fatal("failed to start crudapp", err)
 			os.Exit(1)
 		}
 	}()
 
-	// Shutdown stuff
-	done := make(chan os.Signal, 1)
-	signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	// Wait for shutdown
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+	<-ctx.Done()
 
-	select {
-	case <-done:
-	case <-ctx.Done():
-	}
-	logr.Info("app attempting to shutdown gracefully")
+	logr.Info("crudapp attempting to shutdown gracefully")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logr.Error("app shutdown failed", zap.Error(err))
+		logr.Error("crudapp shutdown failed", zap.Error(err))
 		os.Exit(1)
 	}
 
 	_ = tp.ForceFlush(ctx)
 	_ = tp.Shutdown(ctx)
 
-	logr.Info("app shutdown gracefully. bye 👋")
+	logr.Info("crudapp shutdown gracefully. bye 👋")
 }
 
 func newLogger(cfg *config) *zap.Logger {
@@ -139,15 +132,4 @@ func newLogger(cfg *config) *zap.Logger {
 			zap.String("environment", cfg.ServiceEnvironment),
 		),
 	))
-}
-
-func mustNewStorage(ctx context.Context, logger *zap.Logger, cfg *config) storage.Storage {
-	switch cfg.StorageType {
-	case "memory":
-		return memory.New()
-	case "postgres":
-		return postgres.MustNew(ctx, cfg.PostgresURL, logger)
-	default:
-		panic(fmt.Sprintf("undefined storage type: %s", cfg.StorageType))
-	}
 }

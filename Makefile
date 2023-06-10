@@ -24,49 +24,17 @@ lint: buf-generate
 
 .PHONY: test
 test: buf-generate
-	go test -v ./...
+	go test -race ./...
 
 .PHONY: build
 build: buf-generate
 	sqlc generate
 	go build -o ./bin/crudapp ./cmd/crudapp
 
-.PHONY: create-local-postgres-table
-create-local-postgres-table:
-	psql postgres://postgres:password@localhost:5432/postgres -c 'CREATE TABLE IF NOT EXISTS post (user_id TEXT NOT NULL, post_id TEXT NOT NULL, data TEXT, created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ, PRIMARY KEY (user_id, post_id));'
-
-.PHONY: run-memory
-run-memory: build
-	./bin/crudapp
-
-.PHONY: run-postgres
-run-postgres: build
-	STORAGE_TYPE=postgres POSTGRES_URI=postgres://postgres:password@127.0.0.1:5432/postgres ./bin/crudapp
-
-.PHONY: create
-create:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Create \
-	  -H 'Content-Type: application/json' \
-      -d '{"userId": "${USER_ID}", "data": "${DATA}"}'
-
-.PHONY: read
-read:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Read \
-	  -H 'Content-Type: application/json' \
-      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
+.PHONY: run
+run: build
+	POSTGRES_CONN_STRING=postgres://postgres:password@127.0.0.1:5432/postgres ./bin/crudapp
 
 .PHONY: read-all
 read-all:
 	grpcurl -plaintext -d '{"userId": "${USER_ID}"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
-
-.PHONY: upsert
-upsert:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Upsert \
-      -H 'Content-Type: application/json' \
-      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}", "data": "${DATA}"}'
-
-.PHONY: delete
-delete:
-	curl -XPOST -i http://localhost:8080/crudapp.v1.CrudAppService/Delete \
-      -H 'Content-Type: application/json' \
-      -d '{"userId": "${USER_ID}", "postId": "${POST_ID}"}'
