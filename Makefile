@@ -29,7 +29,7 @@ test: buf-generate
 .PHONY: build
 build: buf-generate
 	sqlc generate
-	go build -o ./bin/crudapp ./cmd/crudapp
+	go build -o ./crudapp ./cmd/crudapp
 
 .PHONY: run
 run: build
