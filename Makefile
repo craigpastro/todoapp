@@ -1,13 +1,5 @@
-.PHONY: download
-download:
-	@cd tools && go mod download
-
-.PHONY: install-tools
-install-tools: download
-	@cd tools && go list -f '{{range .Imports}}{{.}} {{end}}' tools.go | xargs go install
-
 .PHONY: buf-mod-update
-buf-mod-update: install-tools
+buf-mod-update:
 	@test -s ./proto/buf.lock || buf mod update proto
 
 .PHONY: buf-lint
@@ -23,7 +15,7 @@ lint: buf-generate
 	golangci-lint run
 
 .PHONY: test
-test: buf-generate
+test:
 	go test -race ./...
 
 .PHONY: build
