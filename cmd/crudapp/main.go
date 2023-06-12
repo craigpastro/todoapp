@@ -97,9 +97,8 @@ func run(ctx context.Context, cfg *config) {
 	}()
 
 	// Wait for shutdown
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
-	<-c
+	ctx, _ = signal.NotifyContext(ctx, os.Interrupt)
+	<-ctx.Done()
 
 	logr.Info("crudapp attempting to shutdown gracefully")
 
