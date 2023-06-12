@@ -69,6 +69,7 @@ func run(ctx context.Context, cfg *config) {
 
 	interceptors := connect.WithInterceptors(
 		otelconnect.NewInterceptor(),
+		middleware.NewValidatorInterceptor(),
 		middleware.NewLoggingInterceptor(logr),
 	)
 
