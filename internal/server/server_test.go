@@ -80,8 +80,10 @@ func TestAPI(t *testing.T) {
 		res, err := client.Create(context.Background(), req)
 		require.NoError(t, err)
 
-		require.NotEmpty(t, res.Msg.PostId)
-		require.NotEmpty(t, res.Msg.CreatedAt)
+		post := res.Msg.GetPost()
+
+		require.NotEmpty(t, post.GetPostId())
+		require.NotEmpty(t, post.GetCreatedAt())
 	})
 
 	t.Run("read", func(t *testing.T) {
@@ -91,11 +93,13 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.Post.PostId})
 		readRes, err := client.Read(ctx, readReq)
 		require.NoError(t, err)
 
-		require.Equal(t, readRes.Msg.Data, data, "got '%s', want '%s'", readRes.Msg.Data, data)
+		post := readRes.Msg.GetPost()
+
+		require.Equal(t, post.GetData(), data)
 	})
 
 	t.Run("read not exist", func(t *testing.T) {
@@ -112,16 +116,27 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
+		createdPost := createRes.Msg.GetPost()
 		newData := "new Data"
-		upsertReq := connect.NewRequest(&pb.UpsertRequest{UserId: userID, PostId: createRes.Msg.PostId, Data: newData})
+
+		upsertReq := connect.NewRequest(&pb.UpsertRequest{
+			UserId: userID,
+			PostId: createdPost.GetPostId(),
+			Data:   newData,
+		})
 		_, err = client.Upsert(ctx, upsertReq)
 		require.NoError(t, err)
 
-		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		readReq := connect.NewRequest(&pb.ReadRequest{
+			UserId: userID,
+			PostId: createdPost.GetPostId(),
+		})
 		readRes, err := client.Read(ctx, readReq)
 		require.NoError(t, err)
 
-		require.Equal(t, readRes.Msg.Data, newData, "got '%s', want '%s'", readRes.Msg.Data, newData)
+		post := readRes.Msg.GetPost()
+
+		require.Equal(t, post.GetData(), newData)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -131,12 +146,20 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		deleteReq := connect.NewRequest(&pb.DeleteRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		createdPost := createRes.Msg.GetPost()
+
+		deleteReq := connect.NewRequest(&pb.DeleteRequest{
+			UserId: userID,
+			PostId: createdPost.GetPostId(),
+		})
 		_, err = client.Delete(ctx, deleteReq)
 		require.NoError(t, err)
 
 		// Now try to read the deleted record; it should not exist.
-		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.PostId})
+		readReq := connect.NewRequest(&pb.ReadRequest{
+			UserId: userID,
+			PostId: createdPost.GetPostId(),
+		})
 		_, err = client.Read(ctx, readReq)
 		require.ErrorContains(t, err, "Post does not exist")
 	})

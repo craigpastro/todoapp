@@ -10,7 +10,7 @@ service CrudAppService {
 
   rpc Read(ReadRequest) returns (ReadResponse) {}
 
-  rpc ReadAll(ReadAllRequest) returns (stream ReadAllResponse) {}
+  rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {}
 
   rpc Upsert(UpsertRequest) returns (UpsertResponse) {}
 
@@ -18,54 +18,83 @@ service CrudAppService {
 }
 
 message CreateRequest {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string data = 2 [(validate.rules).string = {min_len: 1, max_len: 5000}];
+  string user_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+  string data = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 5000
+  }];
 }
 
 message CreateResponse {
-  string post_id = 1;
-  google.protobuf.Timestamp created_at = 2;
+  Post post = 1;
 }
 
 message ReadRequest {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string post_id = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
+  string user_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+  string post_id = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
 }
 
 message ReadResponse {
-  string user_id = 1;
-  string post_id = 2;
-  string data = 3;
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
+  Post post = 1;
 }
 
 message ReadAllRequest {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
+  string user_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
 }
 
 message ReadAllResponse {
+  repeated Post posts = 1;
+  int64 last_index = 2;
+}
+
+message UpsertRequest {
+  string user_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+  string post_id = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+  string data = 3 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 5000
+  }];
+}
+
+message UpsertResponse {
+  Post post = 1;
+}
+
+message DeleteRequest {
+  string user_id = 1 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+  string post_id = 2 [(validate.rules).string = {
+    min_len: 1,
+    max_len: 100
+  }];
+}
+
+message DeleteResponse {}
+
+message Post {
   string user_id = 1;
   string post_id = 2;
   string data = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
 }
-
-message UpsertRequest {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string post_id = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string data = 3 [(validate.rules).string = {min_len: 1, max_len: 5000}];
-}
-
-message UpsertResponse {
-  string post_id = 1;
-  google.protobuf.Timestamp updated_at = 2;
-}
-
-message DeleteRequest {
-  string user_id = 1 [(validate.rules).string = {min_len: 1, max_len: 100}];
-  string post_id = 2 [(validate.rules).string = {min_len: 1, max_len: 100}];
-}
-
-message DeleteResponse {}

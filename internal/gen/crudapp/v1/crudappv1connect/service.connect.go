@@ -49,7 +49,7 @@ const (
 type CrudAppServiceClient interface {
 	Create(context.Context, *connect_go.Request[v1.CreateRequest]) (*connect_go.Response[v1.CreateResponse], error)
 	Read(context.Context, *connect_go.Request[v1.ReadRequest]) (*connect_go.Response[v1.ReadResponse], error)
-	ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest]) (*connect_go.ServerStreamForClient[v1.ReadAllResponse], error)
+	ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest]) (*connect_go.Response[v1.ReadAllResponse], error)
 	Upsert(context.Context, *connect_go.Request[v1.UpsertRequest]) (*connect_go.Response[v1.UpsertResponse], error)
 	Delete(context.Context, *connect_go.Request[v1.DeleteRequest]) (*connect_go.Response[v1.DeleteResponse], error)
 }
@@ -112,8 +112,8 @@ func (c *crudAppServiceClient) Read(ctx context.Context, req *connect_go.Request
 }
 
 // ReadAll calls crudapp.v1.CrudAppService.ReadAll.
-func (c *crudAppServiceClient) ReadAll(ctx context.Context, req *connect_go.Request[v1.ReadAllRequest]) (*connect_go.ServerStreamForClient[v1.ReadAllResponse], error) {
-	return c.readAll.CallServerStream(ctx, req)
+func (c *crudAppServiceClient) ReadAll(ctx context.Context, req *connect_go.Request[v1.ReadAllRequest]) (*connect_go.Response[v1.ReadAllResponse], error) {
+	return c.readAll.CallUnary(ctx, req)
 }
 
 // Upsert calls crudapp.v1.CrudAppService.Upsert.
@@ -130,7 +130,7 @@ func (c *crudAppServiceClient) Delete(ctx context.Context, req *connect_go.Reque
 type CrudAppServiceHandler interface {
 	Create(context.Context, *connect_go.Request[v1.CreateRequest]) (*connect_go.Response[v1.CreateResponse], error)
 	Read(context.Context, *connect_go.Request[v1.ReadRequest]) (*connect_go.Response[v1.ReadResponse], error)
-	ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest], *connect_go.ServerStream[v1.ReadAllResponse]) error
+	ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest]) (*connect_go.Response[v1.ReadAllResponse], error)
 	Upsert(context.Context, *connect_go.Request[v1.UpsertRequest]) (*connect_go.Response[v1.UpsertResponse], error)
 	Delete(context.Context, *connect_go.Request[v1.DeleteRequest]) (*connect_go.Response[v1.DeleteResponse], error)
 }
@@ -152,7 +152,7 @@ func NewCrudAppServiceHandler(svc CrudAppServiceHandler, opts ...connect_go.Hand
 		svc.Read,
 		opts...,
 	))
-	mux.Handle(CrudAppServiceReadAllProcedure, connect_go.NewServerStreamHandler(
+	mux.Handle(CrudAppServiceReadAllProcedure, connect_go.NewUnaryHandler(
 		CrudAppServiceReadAllProcedure,
 		svc.ReadAll,
 		opts...,
@@ -181,8 +181,8 @@ func (UnimplementedCrudAppServiceHandler) Read(context.Context, *connect_go.Requ
 	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("crudapp.v1.CrudAppService.Read is not implemented"))
 }
 
-func (UnimplementedCrudAppServiceHandler) ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest], *connect_go.ServerStream[v1.ReadAllResponse]) error {
-	return connect_go.NewError(connect_go.CodeUnimplemented, errors.New("crudapp.v1.CrudAppService.ReadAll is not implemented"))
+func (UnimplementedCrudAppServiceHandler) ReadAll(context.Context, *connect_go.Request[v1.ReadAllRequest]) (*connect_go.Response[v1.ReadAllResponse], error) {
+	return nil, connect_go.NewError(connect_go.CodeUnimplemented, errors.New("crudapp.v1.CrudAppService.ReadAll is not implemented"))
 }
 
 func (UnimplementedCrudAppServiceHandler) Upsert(context.Context, *connect_go.Request[v1.UpsertRequest]) (*connect_go.Response[v1.UpsertResponse], error) {

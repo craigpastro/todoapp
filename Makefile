@@ -6,12 +6,14 @@ buf-mod-update:
 buf-lint: buf-mod-update
 	buf lint
 
-.PHONY: buf-generate
-buf-generate: buf-lint
+.PHONY: generate
+generate: buf-lint
+	buf format -w
 	buf generate
+	sqlc generate
 
 .PHONY: lint
-lint: buf-generate
+lint: generate
 	golangci-lint run
 
 .PHONY: test
@@ -19,14 +21,9 @@ test:
 	go test -race ./...
 
 .PHONY: build
-build: buf-generate
-	sqlc generate
+build: generate
 	go build -o ./crudapp ./cmd/crudapp
 
 .PHONY: run
 run: build
-	POSTGRES_CONN_STRING=postgres://postgres:password@127.0.0.1:5432/postgres ./bin/crudapp
-
-.PHONY: read-all
-read-all:
-	grpcurl -plaintext -d '{"userId": "${USER_ID}"}' localhost:8080 crudapp.v1.CrudAppService/ReadAll
+	POSTGRES_CONN_STRING=postgres://postgres:password@127.0.0.1:5432/postgres ./crudapp
