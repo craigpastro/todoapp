@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/storage"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -64,14 +65,16 @@ func TestMain(m *testing.M) {
 func TestRead(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
+
 	created, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
-	record, err := db.Read(ctx, created.UserID, created.PostID)
+
+	read, err := db.Read(ctx, userID, created.GetPostId())
 	require.NoError(t, err)
 
-	require.Equal(t, record.UserID, created.UserID)
-	require.Equal(t, record.PostID, created.PostID)
-	require.Equal(t, record.Data, data)
+	require.Equal(t, created.GetUserId(), read.GetUserId())
+	require.Equal(t, created.GetPostId(), read.GetPostId())
+	require.Equal(t, created.GetData(), read.GetData())
 }
 
 func TestReadNotExists(t *testing.T) {
@@ -86,55 +89,54 @@ func TestReadAll(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
 
-	rec1, err := db.Create(ctx, userID, "data 1")
+	post1, err := db.Create(ctx, userID, "data 1")
 	require.NoError(t, err)
 
-	rec2, err := db.Create(ctx, userID, "data 2")
+	post2, err := db.Create(ctx, userID, "data 2")
 	require.NoError(t, err)
 
-	iter, err := db.ReadAll(ctx, userID)
+	posts, _, err := db.ReadAll(ctx, userID)
 	require.NoError(t, err)
 
-	var record storage.Record
+	require.Len(t, posts, 2)
 
-	require.True(t, iter.Next(ctx))
-	require.NoError(t, iter.Get(&record))
-	// Monotonic clock issues: see https://github.com/stretchr/testify/issues/502
-	require.True(t, cmp.Equal(rec1, &record, cmpopts.IgnoreFields(storage.Record{}, "CreatedAt", "UpdatedAt")))
+	opts := []cmp.Option{
+		cmpopts.IgnoreUnexported(pb.Post{}),
+		cmpopts.IgnoreFields(pb.Post{}, "CreatedAt", "UpdatedAt"),
+	}
 
-	require.True(t, iter.Next(ctx))
-	require.NoError(t, iter.Get(&record))
-	// Monotonic clock issues: see https://github.com/stretchr/testify/issues/502
-	require.True(t, cmp.Equal(rec2, &record, cmpopts.IgnoreFields(storage.Record{}, "CreatedAt", "UpdatedAt")))
-
-	require.False(t, iter.Next(ctx))
+	require.True(t, cmp.Equal(post1, posts[0], opts...))
+	require.True(t, cmp.Equal(post2, posts[1], opts...))
 }
 
 func TestUpsert(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
-	record, err := db.Create(ctx, userID, data)
+	post, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
 	time.Sleep(time.Millisecond) // just in case
+
 	newData := "new data"
-	updatedRecord, err := db.Upsert(ctx, userID, record.PostID, newData)
+	updatedPost, err := db.Upsert(ctx, userID, post.GetPostId(), newData)
 	require.NoError(t, err)
 
-	require.Equal(t, updatedRecord.Data, newData, "got '%s', want '%s'")
-	require.True(t, record.CreatedAt.Before(updatedRecord.UpdatedAt))
+	require.Equal(t, updatedPost.Data, newData, "got '%s', want '%s'")
+	require.True(t, post.GetCreatedAt().AsTime().Before(updatedPost.GetUpdatedAt().AsTime()))
 }
 
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	userID := ulid.Make().String()
-	created, _ := db.Create(ctx, userID, data)
 
-	err := db.Delete(ctx, userID, created.PostID)
+	post, err := db.Create(ctx, userID, data)
 	require.NoError(t, err)
 
-	// Now try to read the deleted record; it should not exist.
-	_, err = db.Read(ctx, userID, created.PostID)
+	err = db.Delete(ctx, userID, post.GetPostId())
+	require.NoError(t, err)
+
+	// Now try to read the deleted post; it should not exist.
+	_, err = db.Read(ctx, userID, post.GetPostId())
 	require.ErrorIs(t, err, storage.ErrPostDoesNotExist)
 }
 
