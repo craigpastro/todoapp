@@ -1,6 +1,6 @@
 -- name: Create :one
-insert into post (user_id, post_id, data, created_at, updated_at)
-values ($1, $2, $3, NOW(), NOW())
+insert into post (user_id, post_id, data)
+values ($1, $2, $3)
 returning *;
 
 -- name: Read :one
@@ -12,8 +12,9 @@ where user_id = $1 and post_id = $2;
 select *
 from post
 where user_id = $1
-limit $2
-offset $3;
+and id > $2
+order by id asc
+limit 100;
 
 -- name: Upsert :one
 insert into post (user_id, post_id, data, created_at, updated_at)

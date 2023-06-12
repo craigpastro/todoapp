@@ -19,13 +19,15 @@ func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
 				zap.String("procedure", req.Spec().Procedure),
 				zap.Duration("took", time.Since(start)),
 				zap.Any("req", req.Any()),
-				zap.Any("res", res.Any()),
 			}
+
 			if err != nil {
 				fields = append(fields, zap.Error(err))
 				logger.Error("rpc_error", fields...)
 				return nil, err
 			}
+
+			fields = append(fields, zap.Any("res", res.Any()))
 
 			logger.Info("rpc_complete", fields...)
 

@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var tracer = otel.Tracer("internal/server")
@@ -50,15 +49,14 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 	ctx, span := tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	record, err := s.Storage.Create(ctx, userID, msg.GetData())
+	post, err := s.Storage.Create(ctx, userID, msg.GetData())
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
 	return connect.NewResponse(&pb.CreateResponse{
-		PostId:    record.PostID,
-		CreatedAt: timestamppb.New(record.CreatedAt),
+		Post: post,
 	}), nil
 }
 
@@ -73,59 +71,37 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	ctx, span := tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	record, err := s.Storage.Read(ctx, userID, postID)
+	post, err := s.Storage.Read(ctx, userID, postID)
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
-		UserId:    record.UserID,
-		PostId:    record.PostID,
-		Data:      record.Data,
-		CreatedAt: timestamppb.New(record.CreatedAt),
-		UpdatedAt: timestamppb.New(record.UpdatedAt),
+		Post: post,
 	}), nil
 }
 
-func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest], stream *connect.ServerStream[pb.ReadAllResponse]) error {
+func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
 	msg := req.Msg
 	if err := validate(msg); err != nil {
-		return err
+		return nil, err
 	}
 
 	userID := msg.GetUserId()
 	ctx, span := tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	iter, err := s.Storage.ReadAll(ctx, userID)
+	posts, lastIndex, err := s.Storage.ReadAll(ctx, userID)
 	if err != nil {
 		instrumentation.TraceError(span, err)
-		return errors.HandleStorageError(err)
+		return nil, errors.HandleStorageError(err)
 	}
 
-	for iter.Next(ctx) {
-		var record storage.Record
-		if err := iter.Get(&record); err != nil {
-			instrumentation.TraceError(span, err)
-			return errors.HandleStorageError(err)
-		}
-
-		err = stream.Send(&pb.ReadAllResponse{
-			UserId:    record.UserID,
-			PostId:    record.PostID,
-			Data:      record.Data,
-			CreatedAt: timestamppb.New(record.CreatedAt),
-			UpdatedAt: timestamppb.New(record.UpdatedAt),
-		})
-		if err != nil {
-			return err
-		}
-	}
-
-	iter.Close(ctx)
-
-	return nil
+	return connect.NewResponse(&pb.ReadAllResponse{
+		Posts:     posts,
+		LastIndex: lastIndex,
+	}), nil
 }
 
 func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
@@ -140,15 +116,14 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 	ctx, span := tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	record, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
+	post, err := s.Storage.Upsert(ctx, userID, postID, msg.GetData())
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
 	}
 
 	return connect.NewResponse(&pb.UpsertResponse{
-		PostId:    msg.PostId,
-		UpdatedAt: timestamppb.New(record.UpdatedAt),
+		Post: post,
 	}), nil
 }
 

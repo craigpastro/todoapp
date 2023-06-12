@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/bufbuild/connect-go"
@@ -98,8 +97,9 @@ func run(ctx context.Context, cfg *config) {
 	}()
 
 	// Wait for shutdown
-	ctx, _ = signal.NotifyContext(ctx, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
-	<-ctx.Done()
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	<-c
 
 	logr.Info("crudapp attempting to shutdown gracefully")
 

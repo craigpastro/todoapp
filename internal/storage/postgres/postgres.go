@@ -9,12 +9,14 @@ import (
 	"log"
 
 	"github.com/cenkalti/backoff/v4"
+	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/sqlc"
 	"github.com/craigpastro/crudapp/internal/storage"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/oklog/ulid/v2"
 	"github.com/pressly/goose/v3"
 	"go.opentelemetry.io/otel"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 //go:embed migrations/*
@@ -85,33 +87,33 @@ func (p *Postgres) Close() error {
 	return p.db.Close()
 }
 
-func (p *Postgres) Create(ctx context.Context, userID, data string) (*storage.Record, error) {
+func (p *Postgres) Create(ctx context.Context, userID, data string) (*pb.Post, error) {
 	ctx, span := tracer.Start(ctx, "postgres.Create")
 	defer span.End()
 
-	post, err := p.queries.Create(ctx, sqlc.CreateParams{
+	row, err := p.queries.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
 		PostID: ulid.Make().String(),
 		Data:   data,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error creating: %w", err)
+		return nil, wrapError(err)
 	}
 
-	return &storage.Record{
-		UserID:    post.UserID,
-		PostID:    post.PostID,
-		Data:      post.Data,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+	return &pb.Post{
+		UserId:    row.UserID,
+		PostId:    row.PostID,
+		Data:      row.Data,
+		CreatedAt: timestamppb.New(row.CreatedAt),
+		UpdatedAt: timestamppb.New(row.UpdatedAt),
 	}, nil
 }
 
-func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Record, error) {
+func (p *Postgres) Read(ctx context.Context, userID, postID string) (*pb.Post, error) {
 	ctx, span := tracer.Start(ctx, "postgres.Read")
 	defer span.End()
 
-	post, err := p.queries.Read(ctx, sqlc.ReadParams{
+	row, err := p.queries.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
 		PostID: postID,
 	})
@@ -119,47 +121,48 @@ func (p *Postgres) Read(ctx context.Context, userID, postID string) (*storage.Re
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, storage.ErrPostDoesNotExist
 		}
-		return nil, fmt.Errorf("error reading: %w", err)
+		return nil, wrapError(err)
 	}
 
-	return &storage.Record{
-		UserID:    post.UserID,
-		PostID:    post.PostID,
-		Data:      post.Data,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+	return &pb.Post{
+		UserId:    row.UserID,
+		PostId:    row.PostID,
+		Data:      row.Data,
+		CreatedAt: timestamppb.New(row.CreatedAt),
+		UpdatedAt: timestamppb.New(row.UpdatedAt),
 	}, nil
 }
 
-func (p *Postgres) ReadAll(ctx context.Context, userID string) (storage.RecordIterator, error) {
+func (p *Postgres) ReadAll(ctx context.Context, userID string) ([]*pb.Post, int64, error) {
 	ctx, span := tracer.Start(ctx, "postgres.ReadAll")
 	defer span.End()
 
-	rows, err := p.db.QueryContext(ctx, "SELECT user_id, post_id, data, created_at, updated_at FROM post WHERE user_id = $1", userID)
+	rows, err := p.queries.ReadPage(ctx, sqlc.ReadPageParams{
+		UserID: userID,
+		ID:     0,
+	})
 	if err != nil {
-		return nil, fmt.Errorf("error reading all: %w", err)
+		return nil, 0, wrapError(err)
 	}
 
-	return &recordInterator{rows: rows}, nil
+	var lastIndex int64
+	res := make([]*pb.Post, 0, len(rows))
+	for _, row := range rows {
+		lastIndex = row.ID
+
+		res = append(res, &pb.Post{
+			UserId:    row.UserID,
+			PostId:    row.PostID,
+			Data:      row.Data,
+			CreatedAt: timestamppb.New(row.CreatedAt),
+			UpdatedAt: timestamppb.New(row.UpdatedAt),
+		})
+	}
+
+	return res, lastIndex, nil
 }
 
-type recordInterator struct {
-	rows *sql.Rows
-}
-
-func (i *recordInterator) Next(_ context.Context) bool {
-	return i.rows.Next()
-}
-
-func (i *recordInterator) Get(dest *storage.Record) error {
-	return i.rows.Scan(&dest.UserID, &dest.PostID, &dest.Data, &dest.CreatedAt, &dest.UpdatedAt)
-}
-
-func (i *recordInterator) Close(_ context.Context) {
-	i.rows.Close()
-}
-
-func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*storage.Record, error) {
+func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*pb.Post, error) {
 	ctx, span := tracer.Start(ctx, "postgres.Upsert")
 	defer span.End()
 
@@ -169,15 +172,15 @@ func (p *Postgres) Upsert(ctx context.Context, userID, postID, data string) (*st
 		Data:   data,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("error updating: %w", err)
+		return nil, wrapError(err)
 	}
 
-	return &storage.Record{
-		UserID:    post.UserID,
-		PostID:    post.PostID,
+	return &pb.Post{
+		UserId:    post.UserID,
+		PostId:    post.PostID,
 		Data:      post.Data,
-		CreatedAt: post.CreatedAt,
-		UpdatedAt: post.UpdatedAt,
+		CreatedAt: timestamppb.New(post.CreatedAt),
+		UpdatedAt: timestamppb.New(post.UpdatedAt),
 	}, nil
 }
 
@@ -190,8 +193,12 @@ func (p *Postgres) Delete(ctx context.Context, userID, postID string) error {
 		PostID: postID,
 	})
 	if err != nil {
-		return fmt.Errorf("error deleting: %w", err)
+		return wrapError(err)
 	}
 
 	return nil
+}
+
+func wrapError(err error) error {
+	return fmt.Errorf("postgres error: %w", err)
 }

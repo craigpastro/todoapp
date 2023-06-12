@@ -19,7 +19,7 @@ Create a post:
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Create \
 -H 'Content-Type: application/json' \
 -d '{"userId": "foo", "data": "my first post"}'
-{"postId":"01H2KJVPWRSQCMZ3TQMHS1SGSQ", "createdAt":"2023-06-10T21:19:40.446394Z"}
+{"post":{"userId":"foo", "postId":"01H2R9YTEHM1K1YMNWSKT5G21Y", "data":"my first post", "createdAt":"2023-06-12T17:20:17.366576Z", "updatedAt":"2023-06-12T17:20:17.366576Z"}}
 ```
 
 Read a post:
@@ -27,8 +27,8 @@ Read a post:
 ```
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Read \
 -H 'Content-Type: application/json' \
--d '{"userId": "foo", "postId": "01H2KJVPWRSQCMZ3TQMHS1SGSQ"}'
-{"userId":"foo", "postId":"01H2KJVPWRSQCMZ3TQMHS1SGSQ", "data":"my first post", "createdAt":"2023-06-10T21:19:40.446394Z", "updatedAt":"2023-06-10T21:19:40.446394Z"}
+-d '{"userId": "foo", "postId": "01H2R9YTEHM1K1YMNWSKT5G21Y"}'                          
+{"post":{"userId":"foo", "postId":"01H2R9YTEHM1K1YMNWSKT5G21Y", "data":"my first post", "createdAt":"2023-06-12T17:20:17.366576Z", "updatedAt":"2023-06-12T17:20:17.366576Z"}}
 ```
 
 Read all posts:
@@ -37,6 +37,7 @@ Read all posts:
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/ReadAll \
 -H 'Content-Type: application/json' \
 -d '{"userId": "foo"}'
+{"posts":[{"userId":"foo", "postId":"01H2R9YTEHM1K1YMNWSKT5G21Y", "data":"my first post", "createdAt":"2023-06-12T17:20:17.366576Z", "updatedAt":"2023-06-12T17:20:17.366576Z"}], "lastIndex":"1"}
 ```
 
 Update a post:
@@ -44,8 +45,8 @@ Update a post:
 ```
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Upsert \
 -H 'Content-Type: application/json' \
--d '{"userId": "foo", "postId": "01H2KJVPWRSQCMZ3TQMHS1SGSQ", "data": "my first updated post"}'
-{"postId":"01H2KJVPWRSQCMZ3TQMHS1SGSQ", "updatedAt":"2023-06-10T21:22:28.057756Z"}%
+-d '{"userId": "foo", "postId": "01H2R9YTEHM1K1YMNWSKT5G21Y", "data": "my first updated post"}'
+{"post":{"userId":"foo", "postId":"01H2R9YTEHM1K1YMNWSKT5G21Y", "data":"my first updated post", "createdAt":"2023-06-12T17:20:17.366576Z", "updatedAt":"2023-06-12T17:22:27.323652Z"}}
 ```
 
 Delete a post:
@@ -53,7 +54,7 @@ Delete a post:
 ```
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Delete \
 -H 'Content-Type: application/json' \
--d '{"userId": "foo", "postId": "01H2KJVPWRSQCMZ3TQMHS1SGSQ"}'
+-d '{"userId": "foo", "postId": "01H2R9YTEHM1K1YMNWSKT5G21Y"}'
 {}
 ```
 
