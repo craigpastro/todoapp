@@ -28,24 +28,10 @@ func NewServer(storage storage.Storage) *server {
 	}
 }
 
-type validator interface {
-	Validate() error
-}
-
-func validate[T validator](msg T) error {
-	if err := msg.Validate(); err != nil {
-		return connect.NewError(connect.CodeInvalidArgument, err)
-	}
-	return nil
-}
-
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
 	msg := req.Msg
-	if err := validate(msg); err != nil {
-		return nil, err
-	}
-
 	userID := msg.GetUserId()
+
 	ctx, span := tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
@@ -62,12 +48,9 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 
 func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest]) (*connect.Response[pb.ReadResponse], error) {
 	msg := req.Msg
-	if err := validate(msg); err != nil {
-		return nil, err
-	}
-
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
+
 	ctx, span := tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
@@ -84,11 +67,8 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 
 func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
 	msg := req.Msg
-	if err := validate(msg); err != nil {
-		return nil, err
-	}
-
 	userID := msg.GetUserId()
+
 	ctx, span := tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
@@ -106,10 +86,6 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 
 func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
 	msg := req.Msg
-	if err := validate(msg); err != nil {
-		return nil, err
-	}
-
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 
@@ -129,12 +105,9 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
 	msg := req.Msg
-	if err := validate(msg); err != nil {
-		return nil, err
-	}
-
 	userID := msg.GetUserId()
 	postID := msg.GetPostId()
+
 	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
