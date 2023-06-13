@@ -1,30 +1,35 @@
-package server
+package main
 
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/bufbuild/connect-go"
+	"github.com/cenkalti/backoff"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
-	"github.com/craigpastro/crudapp/internal/storage/postgres"
-	"github.com/oklog/ulid/v2"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
-	addr = "localhost:12345"
-	data = "some data"
+	token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtcl9yb2JvdG8ifQ.oUD_0r5Q1H_akjeJFWYAxbcr2fckBEb7M25wVJw432Y"
+	port  = 12345
+	data  = "some data"
+)
+
+var (
+	client crudappv1connect.CrudAppServiceClient
 )
 
 func TestMain(m *testing.M) {
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:latest",
@@ -49,34 +54,47 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	port, err := container.MappedPort(ctx, "5432/tcp")
+	containerPort, err := container.MappedPort(ctx, "5432/tcp")
 	if err != nil {
 		panic(err)
 	}
 
-	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, port.Port())
-
-	db := postgres.MustNew(connString, true)
-	defer db.Close()
-
-	mux := http.NewServeMux()
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(NewServer(db)))
+	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, containerPort.Port())
 
 	go func() {
-		if err := http.ListenAndServe(addr, mux); err != nil {
-			log.Fatalf("failed to serve: %v", err)
-		}
+		run(ctx, &config{
+			Port:                port,
+			JWTSecret:           "PMBrjiOH5RMo6nQHidA62XctWGxDG0rw",
+			PostgresConnString:  connString,
+			PostgresAutoMigrate: true,
+		})
 	}()
+
+	client = crudappv1connect.NewCrudAppServiceClient(
+		http.DefaultClient,
+		fmt.Sprintf("http://localhost:%d", port),
+	)
+
+	// Until we have a health endpoint
+	cfg := backoff.NewExponentialBackOff()
+	cfg.MaxElapsedTime = 3 * time.Second
+	err = backoff.Retry(func() error {
+		_, err := client.ReadAll(ctx, createRequest(&pb.ReadAllRequest{}))
+		if err != nil {
+			return err
+		}
+		return nil
+	}, cfg)
+	if err != nil {
+		panic(err)
+	}
 
 	os.Exit(m.Run())
 }
 
 func TestAPI(t *testing.T) {
-	client := crudappv1connect.NewCrudAppServiceClient(http.DefaultClient, fmt.Sprintf("http://%s", addr))
-
 	t.Run("create", func(t *testing.T) {
-		req := connect.NewRequest(&pb.CreateRequest{UserId: ulid.Make().String(), Data: data})
-
+		req := createRequest(&pb.CreateRequest{Data: data})
 		res, err := client.Create(context.Background(), req)
 		require.NoError(t, err)
 
@@ -87,14 +105,12 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("read", func(t *testing.T) {
-		ctx := context.Background()
-		userID := ulid.Make().String()
-		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
-		createRes, err := client.Create(ctx, createReq)
+		createReq := createRequest(&pb.CreateRequest{Data: data})
+		createRes, err := client.Create(context.Background(), createReq)
 		require.NoError(t, err)
 
-		readReq := connect.NewRequest(&pb.ReadRequest{UserId: userID, PostId: createRes.Msg.Post.PostId})
-		readRes, err := client.Read(ctx, readReq)
+		readReq := createRequest(&pb.ReadRequest{PostId: createRes.Msg.Post.PostId})
+		readRes, err := client.Read(context.Background(), readReq)
 		require.NoError(t, err)
 
 		post := readRes.Msg.GetPost()
@@ -103,32 +119,29 @@ func TestAPI(t *testing.T) {
 	})
 
 	t.Run("read not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.ReadRequest{UserId: ulid.Make().String(), PostId: "foo"})
+		req := createRequest(&pb.ReadRequest{PostId: "foo"})
 		_, err := client.Read(context.Background(), req)
 		require.ErrorContains(t, err, "Post does not exist")
 	})
 
 	t.Run("upsert", func(t *testing.T) {
 		ctx := context.Background()
-		userID := ulid.Make().String()
 
-		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
+		createReq := createRequest(&pb.CreateRequest{Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
 		createdPost := createRes.Msg.GetPost()
 		newData := "new Data"
 
-		upsertReq := connect.NewRequest(&pb.UpsertRequest{
-			UserId: userID,
+		upsertReq := createRequest(&pb.UpsertRequest{
 			PostId: createdPost.GetPostId(),
 			Data:   newData,
 		})
 		_, err = client.Upsert(ctx, upsertReq)
 		require.NoError(t, err)
 
-		readReq := connect.NewRequest(&pb.ReadRequest{
-			UserId: userID,
+		readReq := createRequest(&pb.ReadRequest{
 			PostId: createdPost.GetPostId(),
 		})
 		readRes, err := client.Read(ctx, readReq)
@@ -141,33 +154,33 @@ func TestAPI(t *testing.T) {
 
 	t.Run("delete", func(t *testing.T) {
 		ctx := context.Background()
-		userID := ulid.Make().String()
-		createReq := connect.NewRequest(&pb.CreateRequest{UserId: userID, Data: data})
+
+		createReq := createRequest(&pb.CreateRequest{Data: data})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
 		createdPost := createRes.Msg.GetPost()
 
-		deleteReq := connect.NewRequest(&pb.DeleteRequest{
-			UserId: userID,
-			PostId: createdPost.GetPostId(),
-		})
+		deleteReq := createRequest(&pb.DeleteRequest{PostId: createdPost.GetPostId()})
 		_, err = client.Delete(ctx, deleteReq)
 		require.NoError(t, err)
 
 		// Now try to read the deleted record; it should not exist.
-		readReq := connect.NewRequest(&pb.ReadRequest{
-			UserId: userID,
-			PostId: createdPost.GetPostId(),
-		})
+		readReq := createRequest(&pb.ReadRequest{PostId: createdPost.GetPostId()})
 		_, err = client.Read(ctx, readReq)
 		require.ErrorContains(t, err, "Post does not exist")
 	})
 
 	t.Run("delete not exist", func(t *testing.T) {
-		req := connect.NewRequest(&pb.DeleteRequest{UserId: ulid.Make().String(), PostId: "foo"})
+		req := createRequest(&pb.DeleteRequest{PostId: "foo"})
 		_, err := client.Delete(context.Background(), req)
 		require.NoError(t, err)
 	})
+}
 
+func createRequest[T any](t *T) *connect.Request[T] {
+	req := connect.NewRequest(t)
+	req.Header().Add("Authentication", fmt.Sprintf("Bearer %s", token))
+	fmt.Println(">>>", req)
+	return req
 }
