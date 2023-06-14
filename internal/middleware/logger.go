@@ -6,35 +6,36 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	"github.com/craigpastro/crudapp/internal/server"
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 )
 
-func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
+func NewLoggingInterceptor() connect.UnaryInterceptorFunc {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			start := time.Now()
 
 			res, err := next(ctx, req)
 
-			fields := []zap.Field{
-				zap.String("procedure", req.Spec().Procedure),
-				zap.Duration("took", time.Since(start)),
-				zap.Any("req", req.Any()),
+			fields := []any{
+				"procedure", req.Spec().Procedure,
+				"took", time.Since(start),
+				"req", req.Any(),
 			}
 
 			if err != nil {
-				fields = append(fields, zap.Error(err))
+				fields = append(fields, "error", err.Error())
+
 				if e, ok := err.(*server.ServerError); ok && e.Internal != nil {
-					fields = append(fields, zap.String("internal_error", e.Internal.Error()))
+					fields = append(fields, "internal_error", e.Internal.Error())
 				}
 
-				logger.Error("rpc_error", fields...)
+				slog.ErrorCtx(ctx, "req_error", fields...)
 				return nil, err
 			}
 
-			fields = append(fields, zap.Any("res", res.Any()))
+			fields = append(fields, "res", res.Any())
 
-			logger.Info("rpc_complete", fields...)
+			slog.InfoCtx(ctx, "req_complete", fields...)
 
 			return res, nil
 		})
