@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bufbuild/connect-go"
+	"github.com/craigpastro/crudapp/internal/server"
 	"go.uber.org/zap"
 )
 
@@ -23,6 +24,10 @@ func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
 
 			if err != nil {
 				fields = append(fields, zap.Error(err))
+				if e, ok := err.(*server.ServerError); ok && e.Internal != nil {
+					fields = append(fields, zap.String("internal_error", e.Internal.Error()))
+				}
+
 				logger.Error("rpc_error", fields...)
 				return nil, err
 			}
