@@ -8,6 +8,7 @@ import (
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
+	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/storage"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -29,13 +30,12 @@ func NewServer(storage storage.Storage) *server {
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
-	msg := req.Msg
-	userID := msg.GetUserId()
+	userID := middleware.GetUserIDFromCtx(ctx)
 
 	ctx, span := tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
 
-	post, err := s.Storage.Create(ctx, userID, msg.GetData())
+	post, err := s.Storage.Create(ctx, userID, req.Msg.GetData())
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, errors.HandleStorageError(err)
@@ -47,9 +47,8 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 }
 
 func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest]) (*connect.Response[pb.ReadResponse], error) {
-	msg := req.Msg
-	userID := msg.GetUserId()
-	postID := msg.GetPostId()
+	userID := middleware.GetUserIDFromCtx(ctx)
+	postID := req.Msg.GetPostId()
 
 	ctx, span := tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
@@ -66,8 +65,7 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 }
 
 func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
-	msg := req.Msg
-	userID := msg.GetUserId()
+	userID := middleware.GetUserIDFromCtx(ctx)
 
 	ctx, span := tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
 	defer span.End()
@@ -85,8 +83,8 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 }
 
 func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
+	userID := middleware.GetUserIDFromCtx(ctx)
 	msg := req.Msg
-	userID := msg.GetUserId()
 	postID := msg.GetPostId()
 
 	ctx, span := tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
@@ -104,9 +102,8 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
-	msg := req.Msg
-	userID := msg.GetUserId()
-	postID := msg.GetPostId()
+	userID := middleware.GetUserIDFromCtx(ctx)
+	postID := req.Msg.GetPostId()
 
 	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()

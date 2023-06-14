@@ -6,8 +6,10 @@ require (
 	github.com/bufbuild/connect-go v1.8.0
 	github.com/bufbuild/connect-grpcreflect-go v1.1.0
 	github.com/bufbuild/connect-opentelemetry-go v0.3.0
+	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
+	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/go-cmp v0.5.9
 	github.com/jackc/pgx/v5 v5.3.1
 	github.com/oklog/ulid/v2 v2.1.0

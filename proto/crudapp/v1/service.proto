@@ -18,10 +18,6 @@ service CrudAppService {
 }
 
 message CreateRequest {
-  string user_id = 1 [(validate.rules).string = {
-    min_len: 1,
-    max_len: 100
-  }];
   string data = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 5000
@@ -33,10 +29,6 @@ message CreateResponse {
 }
 
 message ReadRequest {
-  string user_id = 1 [(validate.rules).string = {
-    min_len: 1,
-    max_len: 100
-  }];
   string post_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100
@@ -47,12 +39,7 @@ message ReadResponse {
   Post post = 1;
 }
 
-message ReadAllRequest {
-  string user_id = 1 [(validate.rules).string = {
-    min_len: 1,
-    max_len: 100
-  }];
-}
+message ReadAllRequest {}
 
 message ReadAllResponse {
   repeated Post posts = 1;
@@ -60,10 +47,6 @@ message ReadAllResponse {
 }
 
 message UpsertRequest {
-  string user_id = 1 [(validate.rules).string = {
-    min_len: 1,
-    max_len: 100
-  }];
   string post_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100
@@ -79,10 +62,6 @@ message UpsertResponse {
 }
 
 message DeleteRequest {
-  string user_id = 1 [(validate.rules).string = {
-    min_len: 1,
-    max_len: 100
-  }];
   string post_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100

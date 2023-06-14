@@ -32,6 +32,8 @@ type config struct {
 
 	Port int `env:"PORT,default=8080"`
 
+	JWTSecret string `env:"JWT_SECRET,default=PMBrjiOH5RMo6nQHidA62XctWGxDG0rw"`
+
 	LogFormat string `env:"LOG_FORMAT,default=console"`
 
 	TraceEnabled     bool   `env:"TRACE_ENABLED,default=false"`
@@ -68,9 +70,10 @@ func run(ctx context.Context, cfg *config) {
 	db := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
 
 	interceptors := connect.WithInterceptors(
+		middleware.NewLoggingInterceptor(logr),
 		otelconnect.NewInterceptor(),
 		middleware.NewValidatorInterceptor(),
-		middleware.NewLoggingInterceptor(logr),
+		middleware.NewAuthenticationInterceptor(cfg.JWTSecret),
 	)
 
 	mux := http.NewServeMux()

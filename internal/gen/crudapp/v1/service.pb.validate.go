@@ -57,17 +57,6 @@ func (m *CreateRequest) validate(all bool) error {
 
 	var errors []error
 
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 100 {
-		err := CreateRequestValidationError{
-			field:  "UserId",
-			reason: "value length must be between 1 and 100 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if l := utf8.RuneCountInString(m.GetData()); l < 1 || l > 5000 {
 		err := CreateRequestValidationError{
 			field:  "Data",
@@ -308,17 +297,6 @@ func (m *ReadRequest) validate(all bool) error {
 
 	var errors []error
 
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 100 {
-		err := ReadRequestValidationError{
-			field:  "UserId",
-			reason: "value length must be between 1 and 100 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if l := utf8.RuneCountInString(m.GetPostId()); l < 1 || l > 100 {
 		err := ReadRequestValidationError{
 			field:  "PostId",
@@ -557,17 +535,6 @@ func (m *ReadAllRequest) validate(all bool) error {
 
 	var errors []error
 
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 100 {
-		err := ReadAllRequestValidationError{
-			field:  "UserId",
-			reason: "value length must be between 1 and 100 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
 	if len(errors) > 0 {
 		return ReadAllRequestMultiError(errors)
 	}
@@ -803,17 +770,6 @@ func (m *UpsertRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 100 {
-		err := UpsertRequestValidationError{
-			field:  "UserId",
-			reason: "value length must be between 1 and 100 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
 	if l := utf8.RuneCountInString(m.GetPostId()); l < 1 || l > 100 {
 		err := UpsertRequestValidationError{
@@ -1065,17 +1021,6 @@ func (m *DeleteRequest) validate(all bool) error {
 	}
 
 	var errors []error
-
-	if l := utf8.RuneCountInString(m.GetUserId()); l < 1 || l > 100 {
-		err := DeleteRequestValidationError{
-			field:  "UserId",
-			reason: "value length must be between 1 and 100 runes, inclusive",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
 
 	if l := utf8.RuneCountInString(m.GetPostId()); l < 1 || l > 100 {
 		err := DeleteRequestValidationError{

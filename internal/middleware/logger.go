@@ -9,7 +9,7 @@ import (
 )
 
 func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
-	interceptor := func(next connect.UnaryFunc) connect.UnaryFunc {
+	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			start := time.Now()
 
@@ -33,7 +33,5 @@ func NewLoggingInterceptor(logger *zap.Logger) connect.UnaryInterceptorFunc {
 
 			return res, nil
 		})
-	}
-
-	return connect.UnaryInterceptorFunc(interceptor)
+	})
 }
