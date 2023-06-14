@@ -19,8 +19,7 @@ import (
 	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/sethvargo/go-envconfig"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"golang.org/x/exp/slog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -55,7 +54,9 @@ func main() {
 // run runs the server. It takes a context. You may cancel the context to
 // gracefully shutdown the server.
 func run(ctx context.Context, cfg *config) {
-	logr := newLogger(cfg)
+	handler := slog.NewTextHandler(os.Stdout, nil)
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
 
 	tp := sdktrace.NewTracerProvider()
 	if cfg.TraceEnabled {
@@ -70,7 +71,7 @@ func run(ctx context.Context, cfg *config) {
 	db := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
 
 	interceptors := connect.WithInterceptors(
-		middleware.NewLoggingInterceptor(logr),
+		middleware.NewLoggingInterceptor(),
 		otelconnect.NewInterceptor(),
 		middleware.NewValidatorInterceptor(),
 		middleware.NewAuthenticationInterceptor(cfg.JWTSecret),
@@ -92,7 +93,7 @@ func run(ctx context.Context, cfg *config) {
 	}
 
 	go func() {
-		logr.Info(fmt.Sprintf("crudapp starting on :%d", cfg.Port))
+		slog.Info(fmt.Sprintf("crudapp starting on :%d", cfg.Port))
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("failed to start crudapp", err)
@@ -104,35 +105,19 @@ func run(ctx context.Context, cfg *config) {
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt)
 	<-ctx.Done()
 
-	logr.Info("crudapp attempting to shutdown gracefully")
+	slog.Info("crudapp attempting to shutdown gracefully")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		logr.Error("crudapp shutdown failed", zap.Error(err))
+		slog.Error("crudapp shutdown failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
 	_ = tp.ForceFlush(ctx)
 	_ = tp.Shutdown(ctx)
+	_ = db.Close()
 
-	logr.Info("crudapp shutdown gracefully. bye 👋")
-}
-
-func newLogger(cfg *config) *zap.Logger {
-	zapCfg := zap.NewDevelopmentConfig()
-	if cfg.LogFormat == "json" {
-		zapCfg.Encoding = "json"
-	}
-
-	return zap.Must(zapCfg.Build(
-		zap.AddCaller(),
-		zap.AddStacktrace(zapcore.PanicLevel),
-		zap.Fields(
-			zap.String("serviceName", cfg.ServiceName),
-			zap.String("serviceVersion", cfg.ServiceVersion),
-			zap.String("environment", cfg.ServiceEnvironment),
-		),
-	))
+	slog.Info("crudapp shutdown gracefully. bye 👋")
 }
