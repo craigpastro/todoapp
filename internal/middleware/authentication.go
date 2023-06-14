@@ -3,26 +3,12 @@ package middleware
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/bufbuild/connect-go"
+	ctxpkg "github.com/craigpastro/crudapp/internal/context"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-type ctxKey string
-
-var userIDCtxKey = ctxKey("user-id-ctx-key")
-
-func GetUserIDFromCtx(ctx context.Context) string {
-	userID := ctx.Value(userIDCtxKey).(string)
-	if userID == "" {
-		// should never happen so panic
-		panic("user id is empty")
-	}
-
-	return userID
-}
 
 func NewAuthenticationInterceptor(secret string) connect.UnaryInterceptorFunc {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
@@ -40,7 +26,6 @@ func NewAuthenticationInterceptor(secret string) connect.UnaryInterceptorFunc {
 				return []byte(secret), nil
 			})
 			if err != nil {
-				fmt.Println(">>>", err)
 				return nil, connect.NewError(
 					connect.CodeUnauthenticated,
 					errors.New("unauthenticated"),
@@ -49,14 +34,13 @@ func NewAuthenticationInterceptor(secret string) connect.UnaryInterceptorFunc {
 
 			sub, err := t.Claims.GetSubject()
 			if err != nil || sub == "" {
-				fmt.Println(">>>", sub, err)
 				return nil, connect.NewError(
 					connect.CodeUnauthenticated,
 					errors.New("unauthenticated"),
 				)
 			}
 
-			ctx = context.WithValue(ctx, userIDCtxKey, sub)
+			ctx = ctxpkg.SetUserIDInCtx(ctx, sub)
 
 			return next(ctx, req)
 		})

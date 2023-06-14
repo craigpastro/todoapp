@@ -15,7 +15,7 @@ func NewValidatorInterceptor() connect.UnaryInterceptorFunc {
 		return connect.UnaryFunc(func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			if r, ok := req.Any().(validator); ok {
 				if err := r.Validate(); err != nil {
-					return nil, err
+					return nil, connect.NewError(connect.CodeInvalidArgument, err)
 				}
 			}
 

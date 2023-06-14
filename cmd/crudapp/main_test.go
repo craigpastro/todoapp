@@ -121,7 +121,7 @@ func TestAPI(t *testing.T) {
 	t.Run("read not exist", func(t *testing.T) {
 		req := createRequest(&pb.ReadRequest{PostId: "foo"})
 		_, err := client.Read(context.Background(), req)
-		require.ErrorContains(t, err, "Post does not exist")
+		require.ErrorContains(t, err, "post does not exist")
 	})
 
 	t.Run("upsert", func(t *testing.T) {
@@ -168,7 +168,7 @@ func TestAPI(t *testing.T) {
 		// Now try to read the deleted record; it should not exist.
 		readReq := createRequest(&pb.ReadRequest{PostId: createdPost.GetPostId()})
 		_, err = client.Read(ctx, readReq)
-		require.ErrorContains(t, err, "Post does not exist")
+		require.ErrorContains(t, err, "post does not exist")
 	})
 
 	t.Run("delete not exist", func(t *testing.T) {
@@ -181,6 +181,5 @@ func TestAPI(t *testing.T) {
 func createRequest[T any](t *T) *connect.Request[T] {
 	req := connect.NewRequest(t)
 	req.Header().Add("Authentication", fmt.Sprintf("Bearer %s", token))
-	fmt.Println(">>>", req)
 	return req
 }
