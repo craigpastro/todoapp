@@ -29,13 +29,13 @@ func NewLoggingInterceptor() connect.UnaryInterceptorFunc {
 					fields = append(fields, "internal_error", e.Internal.Error())
 				}
 
-				slog.ErrorCtx(ctx, "rpc_error", fields...)
+				slog.ErrorCtx(ctx, "req_error", fields...)
 				return nil, err
 			}
 
 			fields = append(fields, "res", res.Any())
 
-			slog.InfoCtx(ctx, "rpc_complete", fields...)
+			slog.InfoCtx(ctx, "req_complete", fields...)
 
 			return res, nil
 		})
