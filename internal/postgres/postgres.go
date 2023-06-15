@@ -9,14 +9,11 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
-	"go.opentelemetry.io/otel"
 	"golang.org/x/exp/slog"
 )
 
 //go:embed migrations/*
 var fs embed.FS
-
-var tracer = otel.Tracer("internal/storage/postgres")
 
 func New(connString string, migrate bool) (*pgxpool.Pool, error) {
 	pool, err := pgxpool.New(context.Background(), connString)

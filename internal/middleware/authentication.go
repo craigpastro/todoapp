@@ -66,7 +66,6 @@ func NewAuthenticationInterceptor(pool *pgxpool.Pool, secret string) connect.Una
 			// q := sqlc.New(conn).WithTx(tx)
 
 			q := sqlc.New(conn)
-			q.Foo(ctx, sub)
 			ctx = ctxpkg.SetQueriesInCtx(ctx, q)
 
 			resp, err := next(ctx, req)
