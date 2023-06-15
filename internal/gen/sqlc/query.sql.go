@@ -10,19 +10,18 @@ import (
 )
 
 const create = `-- name: Create :one
-insert into post (user_id, post_id, data)
-values ($1, $2, $3)
+insert into post (user_id, data)
+values ($1, $2)
 returning id, user_id, post_id, data, created_at, updated_at
 `
 
 type CreateParams struct {
 	UserID string
-	PostID string
 	Data   string
 }
 
 func (q *Queries) Create(ctx context.Context, arg CreateParams) (Post, error) {
-	row := q.db.QueryRowContext(ctx, create, arg.UserID, arg.PostID, arg.Data)
+	row := q.db.QueryRow(ctx, create, arg.UserID, arg.Data)
 	var i Post
 	err := row.Scan(
 		&i.ID,
@@ -46,7 +45,16 @@ type DeleteParams struct {
 }
 
 func (q *Queries) Delete(ctx context.Context, arg DeleteParams) error {
-	_, err := q.db.ExecContext(ctx, delete, arg.UserID, arg.PostID)
+	_, err := q.db.Exec(ctx, delete, arg.UserID, arg.PostID)
+	return err
+}
+
+const foo = `-- name: Foo :exec
+select set_user_id($1)
+`
+
+func (q *Queries) Foo(ctx context.Context, setUserID interface{}) error {
+	_, err := q.db.Exec(ctx, foo, setUserID)
 	return err
 }
 
@@ -62,7 +70,7 @@ type ReadParams struct {
 }
 
 func (q *Queries) Read(ctx context.Context, arg ReadParams) (Post, error) {
-	row := q.db.QueryRowContext(ctx, read, arg.UserID, arg.PostID)
+	row := q.db.QueryRow(ctx, read, arg.UserID, arg.PostID)
 	var i Post
 	err := row.Scan(
 		&i.ID,
@@ -90,7 +98,7 @@ type ReadPageParams struct {
 }
 
 func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, readPage, arg.UserID, arg.ID)
+	rows, err := q.db.Query(ctx, readPage, arg.UserID, arg.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +117,6 @@ func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]Post, err
 			return nil, err
 		}
 		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
@@ -134,7 +139,7 @@ type UpsertParams struct {
 }
 
 func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (Post, error) {
-	row := q.db.QueryRowContext(ctx, upsert, arg.UserID, arg.PostID, arg.Data)
+	row := q.db.QueryRow(ctx, upsert, arg.UserID, arg.PostID, arg.Data)
 	var i Post
 	err := row.Scan(
 		&i.ID,

@@ -8,55 +8,71 @@ import (
 	ctxpkg "github.com/craigpastro/crudapp/internal/context"
 	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	"github.com/craigpastro/crudapp/internal/gen/sqlc"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
-	"github.com/craigpastro/crudapp/internal/storage"
+	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-var tracer = otel.Tracer("internal/server")
+var (
+	tracer = otel.Tracer("internal/server")
+
+	ErrPostDoesNotExist = errors.New("post does not exist")
+)
 
 type server struct {
 	crudappv1connect.UnimplementedCrudAppServiceHandler
-
-	db storage.Storage
 }
 
-func NewServer(db storage.Storage) *server {
-	return &server{
-		db: db,
-	}
+func NewServer() *server {
+	return &server{}
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
-	userID := ctxpkg.GetUserIDFromCtx(ctx)
-
-	ctx, span := tracer.Start(ctx, "Create", trace.WithAttributes(attribute.String("userID", userID)))
+	ctx, span := tracer.Start(ctx, "Create")
 	defer span.End()
 
-	post, err := s.db.Create(ctx, userID, req.Msg.GetData())
+	userID := ctxpkg.GetUserIDFromCtx(ctx)
+	queries := ctxpkg.GetQueriesFromCtx(ctx)
+
+	post, err := queries.Create(ctx, sqlc.CreateParams{
+		UserID: userID,
+		Data:   req.Msg.GetData(),
+	})
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, newInternalError(err)
 	}
 
 	return connect.NewResponse(&pb.CreateResponse{
-		Post: post,
+		Post: &pb.Post{
+			UserId:    post.UserID,
+			PostId:    post.PostID,
+			Data:      post.Data,
+			CreatedAt: timestamppb.New(post.CreatedAt.Time),
+			UpdatedAt: timestamppb.New(post.UpdatedAt.Time),
+		},
 	}), nil
 }
 
 func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest]) (*connect.Response[pb.ReadResponse], error) {
-	userID := ctxpkg.GetUserIDFromCtx(ctx)
-	postID := req.Msg.GetPostId()
-
-	ctx, span := tracer.Start(ctx, "Read", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
+	ctx, span := tracer.Start(ctx, "Read")
 	defer span.End()
 
-	post, err := s.db.Read(ctx, userID, postID)
+	userID := ctxpkg.GetUserIDFromCtx(ctx)
+	postID := req.Msg.GetPostId()
+	queries := ctxpkg.GetQueriesFromCtx(ctx)
+
+	row, err := queries.Read(ctx, sqlc.ReadParams{
+		UserID: userID,
+		PostID: postID,
+	})
 	if err != nil {
-		if errors.Is(err, storage.ErrPostDoesNotExist) {
-			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrPostDoesNotExist))
 		}
 
 		instrumentation.TraceError(span, err)
@@ -64,20 +80,43 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
-		Post: post,
+		Post: &pb.Post{
+			UserId:    row.UserID,
+			PostId:    row.PostID,
+			Data:      row.Data,
+			CreatedAt: timestamppb.New(row.CreatedAt.Time),
+			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
+		},
 	}), nil
 }
 
 func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllRequest]) (*connect.Response[pb.ReadAllResponse], error) {
-	userID := ctxpkg.GetUserIDFromCtx(ctx)
-
-	ctx, span := tracer.Start(ctx, "ReadAll", trace.WithAttributes(attribute.String("userID", userID)))
+	ctx, span := tracer.Start(ctx, "ReadAll")
 	defer span.End()
 
-	posts, lastIndex, err := s.db.ReadAll(ctx, userID)
+	userID := ctxpkg.GetUserIDFromCtx(ctx)
+	queries := ctxpkg.GetQueriesFromCtx(ctx)
+
+	rows, err := queries.ReadPage(ctx, sqlc.ReadPageParams{
+		UserID: userID,
+	})
 	if err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, newInternalError(err)
+	}
+
+	var lastIndex int64
+	posts := make([]*pb.Post, 0, len(rows))
+	for _, row := range rows {
+		lastIndex = row.ID
+
+		posts = append(posts, &pb.Post{
+			UserId:    row.UserID,
+			PostId:    row.PostID,
+			Data:      row.Data,
+			CreatedAt: timestamppb.New(row.CreatedAt.Time),
+			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
+		})
 	}
 
 	return connect.NewResponse(&pb.ReadAllResponse{
@@ -87,17 +126,22 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 }
 
 func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
+	ctx, span := tracer.Start(ctx, "Update")
+	defer span.End()
+
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	msg := req.Msg
 	postID := msg.GetPostId()
+	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
-	ctx, span := tracer.Start(ctx, "Update", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
-	defer span.End()
-
-	post, err := s.db.Upsert(ctx, userID, postID, msg.GetData())
+	row, err := queries.Upsert(ctx, sqlc.UpsertParams{
+		UserID: userID,
+		PostID: postID,
+		Data:   msg.GetData(),
+	})
 	if err != nil {
-		if errors.Is(err, storage.ErrPostDoesNotExist) {
-			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, err))
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrPostDoesNotExist))
 		}
 
 		instrumentation.TraceError(span, err)
@@ -105,18 +149,28 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 	}
 
 	return connect.NewResponse(&pb.UpsertResponse{
-		Post: post,
+		Post: &pb.Post{
+			UserId:    row.UserID,
+			PostId:    row.PostID,
+			Data:      row.Data,
+			CreatedAt: timestamppb.New(row.CreatedAt.Time),
+			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
+		},
 	}), nil
 }
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	postID := req.Msg.GetPostId()
+	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
 	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	if err := s.db.Delete(ctx, userID, postID); err != nil {
+	if err := queries.Delete(ctx, sqlc.DeleteParams{
+		UserID: userID,
+		PostID: postID,
+	}); err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, newInternalError(err)
 	}

@@ -5,7 +5,7 @@
 package sqlc
 
 import (
-	"time"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Post struct {
@@ -13,6 +13,6 @@ type Post struct {
 	UserID    string
 	PostID    string
 	Data      string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	CreatedAt pgtype.Timestamptz
+	UpdatedAt pgtype.Timestamptz
 }

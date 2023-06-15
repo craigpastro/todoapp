@@ -1,6 +1,9 @@
+-- name: Foo :exec
+select set_user_id($1);
+
 -- name: Create :one
-insert into post (user_id, post_id, data)
-values ($1, $2, $3)
+insert into post (user_id, data)
+values ($1, $2)
 returning *;
 
 -- name: Read :one
