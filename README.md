@@ -1,6 +1,7 @@
 # A simple CRUD app
 
-A simple CRUD app that uses JWTs for authentication and Postgres for storage.
+A simple CRUD app that uses Buf Connect, JWTs for authentication, and Postgres
+for storage.
 
 ## Run crudapp
 
@@ -28,7 +29,7 @@ $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Create \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{"data": "my first post"}'
-{"post":{"userId":"mr_roboto","postId":"01H2VFQYEZ3ESX0604BPSVRVRE","data":"my first post","createdAt":"2023-06-13T22:59:06.852296Z","updatedAt":"2023-06-13T22:59:06.852296Z"}}
+{"post":{"userId":"mr_roboto","postId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"my first post","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}}
 ```
 
 Read a post:
@@ -37,8 +38,8 @@ Read a post:
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Read \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
--d '{"postId": "01H2VFQYEZ3ESX0604BPSVRVRE"}'
-{"post":{"userId":"mr_roboto","postId":"01H2VFQYEZ3ESX0604BPSVRVRE","data":"my first post","createdAt":"2023-06-13T22:59:06.852296Z","updatedAt":"2023-06-13T22:59:06.852296Z"}}
+-d '{"postId": "6086008b-4706-4245-8f4e-58ed3eba43d7"}'
+{"post":{"userId":"mr_roboto","postId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"my first post","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}}
 ```
 
 Read all posts:
@@ -48,7 +49,7 @@ $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/ReadAll \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{}'
-{"posts":[{"userId":"mr_roboto","postId":"01H2VFQYEZ3ESX0604BPSVRVRE","data":"my first post","createdAt":"2023-06-13T22:59:06.852296Z","updatedAt":"2023-06-13T22:59:06.852296Z"}],"lastIndex":"1"}
+{"posts":[{"userId":"mr_roboto","postId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"my first post","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}],"lastIndex":"1"}
 ```
 
 Update a post:
@@ -57,8 +58,8 @@ Update a post:
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Upsert \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
--d '{"postId": "01H2VFQYEZ3ESX0604BPSVRVRE", "data": "my first updated post"}'
-{"post":{"userId":"mr_roboto","postId":"01H2VFQYEZ3ESX0604BPSVRVRE","data":"my first updated post","createdAt":"2023-06-13T22:59:06.852296Z","updatedAt":"2023-06-13T23:01:36.365864Z"}}
+-d '{"postId": "6086008b-4706-4245-8f4e-58ed3eba43d7", "data": "my first updated post"}'
+{"post":{"userId":"mr_roboto","postId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"my first updated post","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:22:18.689477Z"}}
 ```
 
 Delete a post:
@@ -67,7 +68,7 @@ Delete a post:
 $ curl -XPOST http://localhost:8080/crudapp.v1.CrudAppService/Delete \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
--d '{"postId": "01H2VFQYEZ3ESX0604BPSVRVRE"}'
+-d '{"postId": "6086008b-4706-4245-8f4e-58ed3eba43d7"}'
 {}
 ```
 

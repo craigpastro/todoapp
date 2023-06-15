@@ -15,8 +15,8 @@ import (
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/middleware"
+	"github.com/craigpastro/crudapp/internal/postgres"
 	"github.com/craigpastro/crudapp/internal/server"
-	"github.com/craigpastro/crudapp/internal/storage/postgres"
 	"github.com/sethvargo/go-envconfig"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/exp/slog"
@@ -68,13 +68,13 @@ func run(ctx context.Context, cfg *config) {
 		})
 	}
 
-	db := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
+	pool := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
 
 	interceptors := connect.WithInterceptors(
 		middleware.NewLoggingInterceptor(),
 		otelconnect.NewInterceptor(),
 		middleware.NewValidatorInterceptor(),
-		middleware.NewAuthenticationInterceptor(cfg.JWTSecret),
+		middleware.NewAuthenticationInterceptor(pool, cfg.JWTSecret),
 	)
 
 	mux := http.NewServeMux()
@@ -82,7 +82,7 @@ func run(ctx context.Context, cfg *config) {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(db),
+		server.NewServer(),
 		interceptors,
 	))
 
@@ -117,7 +117,7 @@ func run(ctx context.Context, cfg *config) {
 
 	_ = tp.ForceFlush(ctx)
 	_ = tp.Shutdown(ctx)
-	_ = db.Close()
+	pool.Close()
 
 	slog.Info("crudapp shutdown gracefully. bye 👋")
 }
