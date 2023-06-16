@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
-	semconv "go.opentelemetry.io/otel/semconv/v1.7.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 )
@@ -20,6 +20,7 @@ type TracerConfig struct {
 	ServiceVersion string
 	Environment    string
 	Endpoint       string
+	SampleRatio    float64
 }
 
 func MustNewTracerProvider(cfg TracerConfig) *sdktrace.TracerProvider {
@@ -37,21 +38,15 @@ func MustNewTracerProvider(cfg TracerConfig) *sdktrace.TracerProvider {
 		panic(err)
 	}
 
-	resource, err := resource.Merge(
-		resource.Default(),
-		resource.NewWithAttributes(
-			semconv.SchemaURL,
-			semconv.ServiceNameKey.String(cfg.ServiceName),
-			semconv.ServiceVersionKey.String(cfg.ServiceVersion),
-			semconv.DeploymentEnvironmentKey.String(cfg.Environment),
-		),
+	resource := resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceNameKey.String(cfg.ServiceName),
+		semconv.ServiceVersionKey.String(cfg.ServiceVersion),
+		semconv.DeploymentEnvironmentKey.String(cfg.Environment),
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(0.5)),
+		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.SampleRatio)),
 		sdktrace.WithResource(resource),
 		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
 	)

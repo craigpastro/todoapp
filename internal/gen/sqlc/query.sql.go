@@ -10,7 +10,7 @@ import (
 )
 
 const create = `-- name: Create :one
-insert into post (user_id, data)
+insert into crudapp.post (user_id, data)
 values ($1, $2)
 returning id, user_id, post_id, data, created_at, updated_at
 `
@@ -20,9 +20,9 @@ type CreateParams struct {
 	Data   string
 }
 
-func (q *Queries) Create(ctx context.Context, arg CreateParams) (Post, error) {
+func (q *Queries) Create(ctx context.Context, arg CreateParams) (CrudappPost, error) {
 	row := q.db.QueryRow(ctx, create, arg.UserID, arg.Data)
-	var i Post
+	var i CrudappPost
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -35,7 +35,7 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (Post, error) {
 }
 
 const delete = `-- name: Delete :exec
-delete from post
+delete from crudapp.post
 where user_id = $1 and post_id = $2
 `
 
@@ -49,18 +49,9 @@ func (q *Queries) Delete(ctx context.Context, arg DeleteParams) error {
 	return err
 }
 
-const foo = `-- name: Foo :exec
-select set_user_id($1)
-`
-
-func (q *Queries) Foo(ctx context.Context, setUserID interface{}) error {
-	_, err := q.db.Exec(ctx, foo, setUserID)
-	return err
-}
-
 const read = `-- name: Read :one
 select id, user_id, post_id, data, created_at, updated_at
-from post
+from crudapp.post
 where user_id = $1 and post_id = $2
 `
 
@@ -69,9 +60,9 @@ type ReadParams struct {
 	PostID string
 }
 
-func (q *Queries) Read(ctx context.Context, arg ReadParams) (Post, error) {
+func (q *Queries) Read(ctx context.Context, arg ReadParams) (CrudappPost, error) {
 	row := q.db.QueryRow(ctx, read, arg.UserID, arg.PostID)
-	var i Post
+	var i CrudappPost
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
@@ -85,7 +76,7 @@ func (q *Queries) Read(ctx context.Context, arg ReadParams) (Post, error) {
 
 const readPage = `-- name: ReadPage :many
 select id, user_id, post_id, data, created_at, updated_at
-from post
+from crudapp.post
 where user_id = $1
 and id > $2
 order by id asc
@@ -97,15 +88,15 @@ type ReadPageParams struct {
 	ID     int64
 }
 
-func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]Post, error) {
+func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]CrudappPost, error) {
 	rows, err := q.db.Query(ctx, readPage, arg.UserID, arg.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Post
+	var items []CrudappPost
 	for rows.Next() {
-		var i Post
+		var i CrudappPost
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
@@ -125,7 +116,7 @@ func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]Post, err
 }
 
 const upsert = `-- name: Upsert :one
-insert into post (user_id, post_id, data, created_at, updated_at)
+insert into crudapp.post (user_id, post_id, data, created_at, updated_at)
 values ($1, $2, $3, NOW(), NOW())
 on conflict (user_id, post_id)
 do update set data = $3, updated_at = NOW()
@@ -138,9 +129,9 @@ type UpsertParams struct {
 	Data   string
 }
 
-func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (Post, error) {
+func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (CrudappPost, error) {
 	row := q.db.QueryRow(ctx, upsert, arg.UserID, arg.PostID, arg.Data)
-	var i Post
+	var i CrudappPost
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,

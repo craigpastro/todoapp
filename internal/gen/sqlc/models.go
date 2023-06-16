@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type Post struct {
+type CrudappPost struct {
 	ID        int64
 	UserID    string
 	PostID    string

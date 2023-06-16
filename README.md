@@ -1,6 +1,6 @@
 # A simple CRUD app
 
-A simple CRUD app that uses Buf Connect, JWTs for authentication, and Postgres
+A simple CRUD app that uses Buf Connect, JWTs for authentication, and sqlc and Postgres
 for storage.
 
 ## Run crudapp

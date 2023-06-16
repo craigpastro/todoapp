@@ -53,9 +53,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, port.Port())
-
-	pool := MustNew(connString, true)
+	pool := MustNew(&Config{
+		ConnString:        fmt.Sprintf("postgres://authenticator:password@%s:%s/postgres", host, port.Port()),
+		Migrate:           true,
+		MigrateConnString: fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, port.Port()),
+	})
 	defer pool.Close()
 
 	q = sqlc.New(pool)

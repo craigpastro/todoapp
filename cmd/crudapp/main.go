@@ -13,6 +13,7 @@ import (
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	otelconnect "github.com/bufbuild/connect-opentelemetry-go"
 	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	"github.com/craigpastro/crudapp/internal/gen/sqlc"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/postgres"
@@ -35,11 +36,13 @@ type config struct {
 
 	LogFormat string `env:"LOG_FORMAT,default=console"`
 
-	TraceEnabled     bool   `env:"TRACE_ENABLED,default=false"`
-	TraceProviderURL string `env:"TRACE_PROVIDER_URL,default=localhost:4317"`
+	TraceEnabled     bool    `env:"TRACE_ENABLED,default=true"`
+	TraceProviderURL string  `env:"TRACE_PROVIDER_URL,default=localhost:4317"`
+	TraceSampleRatio float64 `env:"TRACE_SAMPLE_RATIO,default=1"`
 
-	PostgresConnString  string `env:"POSTGRES_CONN_STRING,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
-	PostgresAutoMigrate bool   `env:"POSTGRES_AUTOMIGRATE,default=true"`
+	PostgresConnString        string `env:"POSTGRES_CONN_STRING,default=postgres://authenticator:password@127.0.0.1:5432/postgres"`
+	PostgresAutoMigrate       bool   `env:"POSTGRES_AUTOMIGRATE,default=true"`
+	PostgresMigrateConnString string `env:"POSTGRES_MIGRATE_CONN_STRING,default=postgres://postgres:password@127.0.0.1:5432/postgres"`
 }
 
 func main() {
@@ -65,10 +68,18 @@ func run(ctx context.Context, cfg *config) {
 			ServiceVersion: cfg.ServiceVersion,
 			Environment:    cfg.ServiceEnvironment,
 			Endpoint:       cfg.TraceProviderURL,
+			SampleRatio:    cfg.TraceSampleRatio,
 		})
+
+		slog.Info(fmt.Sprintf("sending traces to '%s'", cfg.TraceProviderURL))
 	}
 
-	pool := postgres.MustNew(cfg.PostgresConnString, cfg.PostgresAutoMigrate)
+	pool := postgres.MustNew(&postgres.Config{
+		ConnString:        cfg.PostgresConnString,
+		Migrate:           cfg.PostgresAutoMigrate,
+		MigrateConnString: cfg.PostgresMigrateConnString,
+	})
+	queries := sqlc.New(pool)
 
 	interceptors := connect.WithInterceptors(
 		middleware.NewLoggingInterceptor(),
@@ -82,7 +93,7 @@ func run(ctx context.Context, cfg *config) {
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
 	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
-		server.NewServer(),
+		server.NewServer(queries),
 		interceptors,
 	))
 
@@ -93,7 +104,7 @@ func run(ctx context.Context, cfg *config) {
 	}
 
 	go func() {
-		slog.Info(fmt.Sprintf("crudapp starting on :%d", cfg.Port))
+		slog.Info(fmt.Sprintf("crudapp starting on ':%d'", cfg.Port))
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("failed to start crudapp", err)

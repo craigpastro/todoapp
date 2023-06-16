@@ -59,14 +59,13 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	connString := fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, containerPort.Port())
-
 	go func() {
 		run(ctx, &config{
-			Port:                port,
-			JWTSecret:           "PMBrjiOH5RMo6nQHidA62XctWGxDG0rw",
-			PostgresConnString:  connString,
-			PostgresAutoMigrate: true,
+			Port:                      port,
+			JWTSecret:                 "PMBrjiOH5RMo6nQHidA62XctWGxDG0rw",
+			PostgresConnString:        fmt.Sprintf("postgres://authenticator:password@%s:%s/postgres", host, containerPort.Port()),
+			PostgresAutoMigrate:       true,
+			PostgresMigrateConnString: fmt.Sprintf("postgres://postgres:password@%s:%s/postgres", host, containerPort.Port()),
 		})
 	}()
 
