@@ -3,7 +3,7 @@ create schema crudapp;
 
 create table crudapp.post (
     id bigint generated always as identity not null,
-    user_id text default current_setting('crudapp.request.user_id')::text not null,
+    user_id text not null,
     post_id text default gen_random_uuid() not null,
     data text not null,
     created_at timestamptz default now() not null,
