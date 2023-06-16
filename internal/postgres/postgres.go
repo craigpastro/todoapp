@@ -96,6 +96,17 @@ func Migrate(connString string) error {
 		return fmt.Errorf("goose error: %w", err)
 	}
 
+	err = backoff.Retry(func() error {
+		if err = db.Ping(); err != nil {
+			slog.Info("waiting for Postgres")
+			return err
+		}
+		return nil
+	}, backoff.NewExponentialBackOff())
+	if err != nil {
+		return fmt.Errorf("goose error: error connecting to Postgres: %w", err)
+	}
+
 	if err := goose.Up(db, "migrations"); err != nil {
 		return fmt.Errorf("goose error: %w", err)
 	}
