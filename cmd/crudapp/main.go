@@ -36,7 +36,7 @@ type config struct {
 
 	LogFormat string `env:"LOG_FORMAT,default=console"`
 
-	TraceEnabled     bool    `env:"TRACE_ENABLED,default=true"`
+	TraceEnabled     bool    `env:"TRACE_ENABLED,default=false"`
 	TraceProviderURL string  `env:"TRACE_PROVIDER_URL,default=localhost:4317"`
 	TraceSampleRatio float64 `env:"TRACE_SAMPLE_RATIO,default=1"`
 
