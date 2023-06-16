@@ -7,7 +7,6 @@ require (
 	github.com/bufbuild/connect-grpcreflect-go v1.1.0
 	github.com/bufbuild/connect-opentelemetry-go v0.3.0
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cenkalti/backoff/v4 v4.2.1
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/go-cmp v0.5.9
@@ -31,6 +30,7 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/containerd/containerd v1.7.2 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect

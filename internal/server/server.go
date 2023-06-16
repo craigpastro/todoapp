@@ -25,10 +25,14 @@ var (
 
 type server struct {
 	crudappv1connect.UnimplementedCrudAppServiceHandler
+
+	queries *sqlc.Queries
 }
 
-func NewServer() *server {
-	return &server{}
+func NewServer(queries *sqlc.Queries) *server {
+	return &server{
+		queries: queries,
+	}
 }
 
 func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateRequest]) (*connect.Response[pb.CreateResponse], error) {
@@ -36,9 +40,8 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 	defer span.End()
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
-	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
-	post, err := queries.Create(ctx, sqlc.CreateParams{
+	post, err := s.queries.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
 		Data:   req.Msg.GetData(),
 	})
@@ -64,9 +67,8 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	postID := req.Msg.GetPostId()
-	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
-	row, err := queries.Read(ctx, sqlc.ReadParams{
+	row, err := s.queries.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
 		PostID: postID,
 	})
@@ -95,9 +97,8 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	defer span.End()
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
-	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
-	rows, err := queries.ReadPage(ctx, sqlc.ReadPageParams{
+	rows, err := s.queries.ReadPage(ctx, sqlc.ReadPageParams{
 		UserID: userID,
 	})
 	if err != nil {
@@ -132,9 +133,8 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	msg := req.Msg
 	postID := msg.GetPostId()
-	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
-	row, err := queries.Upsert(ctx, sqlc.UpsertParams{
+	row, err := s.queries.Upsert(ctx, sqlc.UpsertParams{
 		UserID: userID,
 		PostID: postID,
 		Data:   msg.GetData(),
@@ -162,12 +162,11 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	postID := req.Msg.GetPostId()
-	queries := ctxpkg.GetQueriesFromCtx(ctx)
 
 	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
 	defer span.End()
 
-	if err := queries.Delete(ctx, sqlc.DeleteParams{
+	if err := s.queries.Delete(ctx, sqlc.DeleteParams{
 		UserID: userID,
 		PostID: postID,
 	}); err != nil {

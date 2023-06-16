@@ -7,7 +7,6 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	ctxpkg "github.com/craigpastro/crudapp/internal/context"
-	"github.com/craigpastro/crudapp/internal/gen/sqlc"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -42,40 +41,9 @@ func NewAuthenticationInterceptor(pool *pgxpool.Pool, secret string) connect.Una
 				)
 			}
 
-			// TODO: this should go away after RLS
 			ctx = ctxpkg.SetUserIDInCtx(ctx, sub)
 
-			conn, err := pool.Acquire(ctx)
-			if err != nil {
-				// TODO: refactor errors to their own package and handle them in middleware
-				return nil, connect.NewError(
-					connect.CodeInternal,
-					errors.New("internal server error"),
-				)
-			}
-			defer conn.Release()
-
-			// tx, err := conn.Begin(ctx)
-			// if err != nil {
-			// 	return nil, connect.NewError(
-			// 		connect.CodeInternal,
-			// 		errors.New("internal server error"),
-			// 	)
-			// }
-			// defer tx.Rollback(context.Background())
-			// q := sqlc.New(conn).WithTx(tx)
-
-			q := sqlc.New(conn)
-			ctx = ctxpkg.SetQueriesInCtx(ctx, q)
-
-			resp, err := next(ctx, req)
-			if err != nil {
-				return nil, err
-			}
-
-			// tx.Commit(ctx)
-
-			return resp, nil
+			return next(ctx, req)
 		})
 	})
 }
