@@ -1,4 +1,4 @@
-module github.com/craigpastro/crudapp
+module github.com/craigpastro/todoapp
 
 go 1.20
 

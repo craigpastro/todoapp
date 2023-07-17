@@ -10,8 +10,8 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	"github.com/cenkalti/backoff"
-	pb "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
-	"github.com/craigpastro/crudapp/internal/gen/todoapp/v1/todoappv1connect"
+	pb "github.com/craigpastro/todoapp/internal/gen/todoapp/v1"
+	"github.com/craigpastro/todoapp/internal/gen/todoapp/v1/todoappv1connect"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"

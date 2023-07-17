@@ -12,12 +12,12 @@ import (
 	"github.com/bufbuild/connect-go"
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	otelconnect "github.com/bufbuild/connect-opentelemetry-go"
-	"github.com/craigpastro/crudapp/internal/gen/sqlc"
-	"github.com/craigpastro/crudapp/internal/gen/todoapp/v1/todoappv1connect"
-	"github.com/craigpastro/crudapp/internal/instrumentation"
-	"github.com/craigpastro/crudapp/internal/middleware"
-	"github.com/craigpastro/crudapp/internal/postgres"
-	"github.com/craigpastro/crudapp/internal/server"
+	"github.com/craigpastro/todoapp/internal/gen/sqlc"
+	"github.com/craigpastro/todoapp/internal/gen/todoapp/v1/todoappv1connect"
+	"github.com/craigpastro/todoapp/internal/instrumentation"
+	"github.com/craigpastro/todoapp/internal/middleware"
+	"github.com/craigpastro/todoapp/internal/postgres"
+	"github.com/craigpastro/todoapp/internal/server"
 	"github.com/sethvargo/go-envconfig"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/exp/slog"
@@ -98,16 +98,16 @@ func run(ctx context.Context, cfg *config) {
 	))
 
 	srv := &http.Server{
-		Addr:              fmt.Sprintf("localhost:%d", cfg.Port),
+		Addr:              fmt.Sprintf("0.0.0.0:%d", cfg.Port),
 		ReadHeaderTimeout: 3 * time.Second,
 		Handler:           h2c.NewHandler(mux, &http2.Server{}),
 	}
 
 	go func() {
-		slog.Info(fmt.Sprintf("crudapp starting on ':%d'", cfg.Port))
+		slog.Info(fmt.Sprintf("todoapp starting on ':%d'", cfg.Port))
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatal("failed to start crudapp", err)
+			log.Fatal("failed to start todoapp", err)
 			os.Exit(1)
 		}
 	}()
@@ -116,13 +116,13 @@ func run(ctx context.Context, cfg *config) {
 	ctx, _ = signal.NotifyContext(ctx, os.Interrupt)
 	<-ctx.Done()
 
-	slog.Info("crudapp attempting to shutdown gracefully")
+	slog.Info("todoapp attempting to shutdown gracefully")
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("crudapp shutdown failed", slog.String("error", err.Error()))
+		slog.Error("todoapp shutdown failed", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
@@ -130,5 +130,5 @@ func run(ctx context.Context, cfg *config) {
 	_ = tp.Shutdown(ctx)
 	pool.Close()
 
-	slog.Info("crudapp shutdown gracefully. bye 👋")
+	slog.Info("todoapp shutdown gracefully. bye 👋")
 }
