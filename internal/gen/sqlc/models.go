@@ -8,11 +8,11 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-type CrudappPost struct {
+type TodoappTodo struct {
 	ID        int64
 	UserID    string
-	PostID    string
-	Data      string
+	TodoID    string
+	Todo      string
 	CreatedAt pgtype.Timestamptz
 	UpdatedAt pgtype.Timestamptz
 }

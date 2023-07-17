@@ -1,68 +1,65 @@
 syntax = "proto3";
 
-package crudapp.v1;
+package todoapp.v1;
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
-service CrudAppService {
+service TodoAppService {
   rpc Create(CreateRequest) returns (CreateResponse) {}
-
   rpc Read(ReadRequest) returns (ReadResponse) {}
-
   rpc ReadAll(ReadAllRequest) returns (ReadAllResponse) {}
-
-  rpc Upsert(UpsertRequest) returns (UpsertResponse) {}
-
+  rpc Update(UpdateRequest) returns (UpdateResponse) {}
   rpc Delete(DeleteRequest) returns (DeleteResponse) {}
 }
 
 message CreateRequest {
-  string data = 2 [(validate.rules).string = {
+  string todo = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 5000
   }];
 }
 
 message CreateResponse {
-  Post post = 1;
+  Todo todo = 1;
 }
 
 message ReadRequest {
-  string post_id = 2 [(validate.rules).string = {
+  string todo_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100
   }];
 }
 
 message ReadResponse {
-  Post post = 1;
+  Todo todo = 1;
 }
 
 message ReadAllRequest {}
 
 message ReadAllResponse {
-  repeated Post posts = 1;
+  repeated Todo todos = 1;
   int64 last_index = 2;
 }
 
-message UpsertRequest {
-  string post_id = 2 [(validate.rules).string = {
+message UpdateRequest {
+  string todo_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100
   }];
-  string data = 3 [(validate.rules).string = {
+
+  string todo = 3 [(validate.rules).string = {
     min_len: 1,
     max_len: 5000
   }];
 }
 
-message UpsertResponse {
-  Post post = 1;
+message UpdateResponse {
+  Todo todo = 1;
 }
 
 message DeleteRequest {
-  string post_id = 2 [(validate.rules).string = {
+  string todo_id = 2 [(validate.rules).string = {
     min_len: 1,
     max_len: 100
   }];
@@ -70,10 +67,10 @@ message DeleteRequest {
 
 message DeleteResponse {}
 
-message Post {
+message Todo {
   string user_id = 1;
-  string post_id = 2;
-  string data = 3;
+  string todo_id = 2;
+  string todo = 3;
   google.protobuf.Timestamp created_at = 4;
   google.protobuf.Timestamp updated_at = 5;
 }

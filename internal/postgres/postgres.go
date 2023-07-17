@@ -53,7 +53,7 @@ func New(cfg *Config) (*pgxpool.Pool, error) {
 	pgxCfg.ConnConfig.Tracer = queryTracer{}
 
 	pgxCfg.BeforeAcquire = func(ctx context.Context, conn *pgx.Conn) bool {
-		_, err := conn.Exec(ctx, "set role crudapp_user")
+		_, err := conn.Exec(ctx, "set role todoapp_user")
 		if err != nil {
 			panic(err)
 		}

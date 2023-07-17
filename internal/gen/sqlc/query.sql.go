@@ -10,24 +10,24 @@ import (
 )
 
 const create = `-- name: Create :one
-insert into crudapp.post (user_id, data)
+insert into todoapp.todo (user_id, todo)
 values ($1, $2)
-returning id, user_id, post_id, data, created_at, updated_at
+returning id, user_id, todo_id, todo, created_at, updated_at
 `
 
 type CreateParams struct {
 	UserID string
-	Data   string
+	Todo   string
 }
 
-func (q *Queries) Create(ctx context.Context, arg CreateParams) (CrudappPost, error) {
-	row := q.db.QueryRow(ctx, create, arg.UserID, arg.Data)
-	var i CrudappPost
+func (q *Queries) Create(ctx context.Context, arg CreateParams) (TodoappTodo, error) {
+	row := q.db.QueryRow(ctx, create, arg.UserID, arg.Todo)
+	var i TodoappTodo
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.PostID,
-		&i.Data,
+		&i.TodoID,
+		&i.Todo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -35,39 +35,39 @@ func (q *Queries) Create(ctx context.Context, arg CreateParams) (CrudappPost, er
 }
 
 const delete = `-- name: Delete :exec
-delete from crudapp.post
-where user_id = $1 and post_id = $2
+delete from todoapp.todo
+where user_id = $1 and todo_id = $2
 `
 
 type DeleteParams struct {
 	UserID string
-	PostID string
+	TodoID string
 }
 
 func (q *Queries) Delete(ctx context.Context, arg DeleteParams) error {
-	_, err := q.db.Exec(ctx, delete, arg.UserID, arg.PostID)
+	_, err := q.db.Exec(ctx, delete, arg.UserID, arg.TodoID)
 	return err
 }
 
 const read = `-- name: Read :one
-select id, user_id, post_id, data, created_at, updated_at
-from crudapp.post
-where user_id = $1 and post_id = $2
+select id, user_id, todo_id, todo, created_at, updated_at
+from todoapp.todo
+where user_id = $1 and todo_id = $2
 `
 
 type ReadParams struct {
 	UserID string
-	PostID string
+	TodoID string
 }
 
-func (q *Queries) Read(ctx context.Context, arg ReadParams) (CrudappPost, error) {
-	row := q.db.QueryRow(ctx, read, arg.UserID, arg.PostID)
-	var i CrudappPost
+func (q *Queries) Read(ctx context.Context, arg ReadParams) (TodoappTodo, error) {
+	row := q.db.QueryRow(ctx, read, arg.UserID, arg.TodoID)
+	var i TodoappTodo
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.PostID,
-		&i.Data,
+		&i.TodoID,
+		&i.Todo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
@@ -75,8 +75,8 @@ func (q *Queries) Read(ctx context.Context, arg ReadParams) (CrudappPost, error)
 }
 
 const readPage = `-- name: ReadPage :many
-select id, user_id, post_id, data, created_at, updated_at
-from crudapp.post
+select id, user_id, todo_id, todo, created_at, updated_at
+from todoapp.todo
 where user_id = $1
 and id > $2
 order by id asc
@@ -88,20 +88,20 @@ type ReadPageParams struct {
 	ID     int64
 }
 
-func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]CrudappPost, error) {
+func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]TodoappTodo, error) {
 	rows, err := q.db.Query(ctx, readPage, arg.UserID, arg.ID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []CrudappPost
+	var items []TodoappTodo
 	for rows.Next() {
-		var i CrudappPost
+		var i TodoappTodo
 		if err := rows.Scan(
 			&i.ID,
 			&i.UserID,
-			&i.PostID,
-			&i.Data,
+			&i.TodoID,
+			&i.Todo,
 			&i.CreatedAt,
 			&i.UpdatedAt,
 		); err != nil {
@@ -115,28 +115,27 @@ func (q *Queries) ReadPage(ctx context.Context, arg ReadPageParams) ([]CrudappPo
 	return items, nil
 }
 
-const upsert = `-- name: Upsert :one
-insert into crudapp.post (user_id, post_id, data, created_at, updated_at)
-values ($1, $2, $3, NOW(), NOW())
-on conflict (user_id, post_id)
-do update set data = $3, updated_at = NOW()
-returning id, user_id, post_id, data, created_at, updated_at
+const update = `-- name: Update :one
+update todoapp.todo
+set todo = $1, updated_at = NOW()
+where user_id  = $2 AND todo_id = $3
+returning id, user_id, todo_id, todo, created_at, updated_at
 `
 
-type UpsertParams struct {
+type UpdateParams struct {
+	Todo   string
 	UserID string
-	PostID string
-	Data   string
+	TodoID string
 }
 
-func (q *Queries) Upsert(ctx context.Context, arg UpsertParams) (CrudappPost, error) {
-	row := q.db.QueryRow(ctx, upsert, arg.UserID, arg.PostID, arg.Data)
-	var i CrudappPost
+func (q *Queries) Update(ctx context.Context, arg UpdateParams) (TodoappTodo, error) {
+	row := q.db.QueryRow(ctx, update, arg.Todo, arg.UserID, arg.TodoID)
+	var i TodoappTodo
 	err := row.Scan(
 		&i.ID,
 		&i.UserID,
-		&i.PostID,
-		&i.Data,
+		&i.TodoID,
+		&i.Todo,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)

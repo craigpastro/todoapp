@@ -22,8 +22,8 @@ test:
 
 .PHONY: build
 build: generate
-	go build -o ./crudapp ./cmd/crudapp
+	go build -o ./todoapp ./cmd/todoapp
 
 .PHONY: run
 run: build
-	POSTGRES_CONN_STRING=postgres://postgres:password@127.0.0.1:5432/postgres ./crudapp
+	POSTGRES_CONN_STRING=postgres://postgres:password@127.0.0.1:5432/postgres ./todoapp
