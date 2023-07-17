@@ -8,7 +8,7 @@ import (
 	context "context"
 	errors "errors"
 	connect_go "github.com/bufbuild/connect-go"
-	v1 "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
+	v1 "github.com/craigpastro/todoapp/internal/gen/todoapp/v1"
 	http "net/http"
 	strings "strings"
 )

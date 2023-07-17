@@ -3,12 +3,9 @@
 A simple TODO app that uses Buf Connect, JWTs for authentication, OTEL for
 tracing, and sqlc and Postgres for storage.
 
-## Run todoapp
+## Try it out
 
-```
-docker compose up -d
-make run
-```
+`docker compose up -d` will run Postgres, Jaeger and the TODO app.
 
 ## Usage
 

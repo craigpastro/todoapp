@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/connect-go"
-	ctxpkg "github.com/craigpastro/crudapp/internal/context"
+	ctxpkg "github.com/craigpastro/todoapp/internal/context"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/craigpastro/crudapp/internal/gen/sqlc"
-	pb "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
+	"github.com/craigpastro/todoapp/internal/gen/sqlc"
+	pb "github.com/craigpastro/todoapp/internal/gen/todoapp/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/craigpastro/crudapp/internal/server"
+	"github.com/craigpastro/todoapp/internal/server"
 	"golang.org/x/exp/slog"
 )
 
