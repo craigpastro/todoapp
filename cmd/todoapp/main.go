@@ -12,8 +12,8 @@ import (
 	"github.com/bufbuild/connect-go"
 	grpcreflect "github.com/bufbuild/connect-grpcreflect-go"
 	otelconnect "github.com/bufbuild/connect-opentelemetry-go"
-	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/gen/sqlc"
+	"github.com/craigpastro/crudapp/internal/gen/todoapp/v1/todoappv1connect"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/craigpastro/crudapp/internal/middleware"
 	"github.com/craigpastro/crudapp/internal/postgres"
@@ -89,10 +89,10 @@ func run(ctx context.Context, cfg *config) {
 	)
 
 	mux := http.NewServeMux()
-	reflector := grpcreflect.NewStaticReflector(crudappv1connect.CrudAppServiceName)
+	reflector := grpcreflect.NewStaticReflector(todoappv1connect.TodoAppServiceName)
 	mux.Handle(grpcreflect.NewHandlerV1(reflector))
 	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
-	mux.Handle(crudappv1connect.NewCrudAppServiceHandler(
+	mux.Handle(todoappv1connect.NewTodoAppServiceHandler(
 		server.NewServer(queries),
 		interceptors,
 	))

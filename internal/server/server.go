@@ -6,9 +6,9 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	ctxpkg "github.com/craigpastro/crudapp/internal/context"
-	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
-	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
 	"github.com/craigpastro/crudapp/internal/gen/sqlc"
+	pb "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
+	"github.com/craigpastro/crudapp/internal/gen/todoapp/v1/todoappv1connect"
 	"github.com/craigpastro/crudapp/internal/instrumentation"
 	"github.com/jackc/pgx/v5"
 	"go.opentelemetry.io/otel"
@@ -20,11 +20,11 @@ import (
 var (
 	tracer = otel.Tracer("internal/server")
 
-	ErrPostDoesNotExist = errors.New("post does not exist")
+	ErrTodoIDDoesNotExist = errors.New("todo id does not exist")
 )
 
 type server struct {
-	crudappv1connect.UnimplementedCrudAppServiceHandler
+	todoappv1connect.UnimplementedTodoAppServiceHandler
 
 	queries *sqlc.Queries
 }
@@ -43,7 +43,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 
 	post, err := s.queries.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
-		Data:   req.Msg.GetData(),
+		Todo:   req.Msg.GetTodo(),
 	})
 	if err != nil {
 		instrumentation.TraceError(span, err)
@@ -51,10 +51,10 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 	}
 
 	return connect.NewResponse(&pb.CreateResponse{
-		Post: &pb.Post{
+		Todo: &pb.Todo{
 			UserId:    post.UserID,
-			PostId:    post.PostID,
-			Data:      post.Data,
+			TodoId:    post.TodoID,
+			Todo:      post.Todo,
 			CreatedAt: timestamppb.New(post.CreatedAt.Time),
 			UpdatedAt: timestamppb.New(post.UpdatedAt.Time),
 		},
@@ -66,15 +66,15 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	defer span.End()
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
-	postID := req.Msg.GetPostId()
+	todoID := req.Msg.GetTodoId()
 
 	row, err := s.queries.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
-		PostID: postID,
+		TodoID: todoID,
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrPostDoesNotExist))
+			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrTodoIDDoesNotExist))
 		}
 
 		instrumentation.TraceError(span, err)
@@ -82,10 +82,10 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
-		Post: &pb.Post{
+		Todo: &pb.Todo{
 			UserId:    row.UserID,
-			PostId:    row.PostID,
-			Data:      row.Data,
+			TodoId:    row.TodoID,
+			Todo:      row.Todo,
 			CreatedAt: timestamppb.New(row.CreatedAt.Time),
 			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 		},
@@ -107,52 +107,52 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	}
 
 	var lastIndex int64
-	posts := make([]*pb.Post, 0, len(rows))
+	todos := make([]*pb.Todo, 0, len(rows))
 	for _, row := range rows {
 		lastIndex = row.ID
 
-		posts = append(posts, &pb.Post{
+		todos = append(todos, &pb.Todo{
 			UserId:    row.UserID,
-			PostId:    row.PostID,
-			Data:      row.Data,
+			TodoId:    row.TodoID,
+			Todo:      row.Todo,
 			CreatedAt: timestamppb.New(row.CreatedAt.Time),
 			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 		})
 	}
 
 	return connect.NewResponse(&pb.ReadAllResponse{
-		Posts:     posts,
+		Todos:     todos,
 		LastIndex: lastIndex,
 	}), nil
 }
 
-func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertRequest]) (*connect.Response[pb.UpsertResponse], error) {
+func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateRequest]) (*connect.Response[pb.UpdateResponse], error) {
 	ctx, span := tracer.Start(ctx, "Update")
 	defer span.End()
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 	msg := req.Msg
-	postID := msg.GetPostId()
+	todoID := msg.GetTodoId()
 
-	row, err := s.queries.Upsert(ctx, sqlc.UpsertParams{
+	row, err := s.queries.Update(ctx, sqlc.UpdateParams{
 		UserID: userID,
-		PostID: postID,
-		Data:   msg.GetData(),
+		TodoID: todoID,
+		Todo:   msg.GetTodo(),
 	})
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrPostDoesNotExist))
+			return nil, newPublicError(connect.NewError(connect.CodeInvalidArgument, ErrTodoIDDoesNotExist))
 		}
 
 		instrumentation.TraceError(span, err)
 		return nil, newInternalError(err)
 	}
 
-	return connect.NewResponse(&pb.UpsertResponse{
-		Post: &pb.Post{
+	return connect.NewResponse(&pb.UpdateResponse{
+		Todo: &pb.Todo{
 			UserId:    row.UserID,
-			PostId:    row.PostID,
-			Data:      row.Data,
+			TodoId:    row.TodoID,
+			Todo:      row.Todo,
 			CreatedAt: timestamppb.New(row.CreatedAt.Time),
 			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 		},
@@ -161,14 +161,14 @@ func (s *server) Upsert(ctx context.Context, req *connect.Request[pb.UpsertReque
 
 func (s *server) Delete(ctx context.Context, req *connect.Request[pb.DeleteRequest]) (*connect.Response[pb.DeleteResponse], error) {
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
-	postID := req.Msg.GetPostId()
+	todoID := req.Msg.GetTodoId()
 
-	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", postID)))
+	ctx, span := tracer.Start(ctx, "Delete", trace.WithAttributes(attribute.String("userID", userID), attribute.String("postID", todoID)))
 	defer span.End()
 
 	if err := s.queries.Delete(ctx, sqlc.DeleteParams{
 		UserID: userID,
-		PostID: postID,
+		TodoID: todoID,
 	}); err != nil {
 		instrumentation.TraceError(span, err)
 		return nil, newInternalError(err)

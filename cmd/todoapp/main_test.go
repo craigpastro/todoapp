@@ -10,8 +10,8 @@ import (
 
 	"github.com/bufbuild/connect-go"
 	"github.com/cenkalti/backoff"
-	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
-	"github.com/craigpastro/crudapp/internal/gen/crudapp/v1/crudappv1connect"
+	pb "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
+	"github.com/craigpastro/crudapp/internal/gen/todoapp/v1/todoappv1connect"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -20,11 +20,11 @@ import (
 const (
 	token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJtcl9yb2JvdG8ifQ.oUD_0r5Q1H_akjeJFWYAxbcr2fckBEb7M25wVJw432Y"
 	port  = 12345
-	data  = "some data"
+	aTodo = "buy some veggies"
 )
 
 var (
-	client crudappv1connect.CrudAppServiceClient
+	client todoappv1connect.TodoAppServiceClient
 )
 
 func TestMain(m *testing.M) {
@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 		})
 	}()
 
-	client = crudappv1connect.NewCrudAppServiceClient(
+	client = todoappv1connect.NewTodoAppServiceClient(
 		http.DefaultClient,
 		fmt.Sprintf("http://localhost:%d", port),
 	)
@@ -93,85 +93,85 @@ func TestMain(m *testing.M) {
 
 func TestAPI(t *testing.T) {
 	t.Run("create", func(t *testing.T) {
-		req := createRequest(&pb.CreateRequest{Data: data})
+		req := createRequest(&pb.CreateRequest{Todo: aTodo})
 		res, err := client.Create(context.Background(), req)
 		require.NoError(t, err)
 
-		post := res.Msg.GetPost()
+		todo := res.Msg.GetTodo()
 
-		require.NotEmpty(t, post.GetPostId())
-		require.NotEmpty(t, post.GetCreatedAt())
+		require.NotEmpty(t, todo.GetTodoId())
+		require.NotEmpty(t, todo.GetCreatedAt())
 	})
 
 	t.Run("read", func(t *testing.T) {
-		createReq := createRequest(&pb.CreateRequest{Data: data})
+		createReq := createRequest(&pb.CreateRequest{Todo: aTodo})
 		createRes, err := client.Create(context.Background(), createReq)
 		require.NoError(t, err)
 
-		readReq := createRequest(&pb.ReadRequest{PostId: createRes.Msg.Post.PostId})
+		readReq := createRequest(&pb.ReadRequest{TodoId: createRes.Msg.Todo.GetTodoId()})
 		readRes, err := client.Read(context.Background(), readReq)
 		require.NoError(t, err)
 
-		post := readRes.Msg.GetPost()
+		post := readRes.Msg.GetTodo()
 
-		require.Equal(t, post.GetData(), data)
+		require.Equal(t, post.GetTodo(), aTodo)
 	})
 
 	t.Run("read not exist", func(t *testing.T) {
-		req := createRequest(&pb.ReadRequest{PostId: "foo"})
+		req := createRequest(&pb.ReadRequest{TodoId: "foo"})
 		_, err := client.Read(context.Background(), req)
-		require.ErrorContains(t, err, "post does not exist")
+		require.ErrorContains(t, err, "todo id does not exist")
 	})
 
 	t.Run("upsert", func(t *testing.T) {
 		ctx := context.Background()
 
-		createReq := createRequest(&pb.CreateRequest{Data: data})
+		createReq := createRequest(&pb.CreateRequest{Todo: aTodo})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		createdPost := createRes.Msg.GetPost()
-		newData := "new Data"
+		createdTodo := createRes.Msg.GetTodo()
+		newTodo := "call parents"
 
-		upsertReq := createRequest(&pb.UpsertRequest{
-			PostId: createdPost.GetPostId(),
-			Data:   newData,
+		upsertReq := createRequest(&pb.UpdateRequest{
+			TodoId: createdTodo.GetTodoId(),
+			Todo:   newTodo,
 		})
-		_, err = client.Upsert(ctx, upsertReq)
+		_, err = client.Update(ctx, upsertReq)
 		require.NoError(t, err)
 
 		readReq := createRequest(&pb.ReadRequest{
-			PostId: createdPost.GetPostId(),
+			TodoId: createdTodo.GetTodoId(),
 		})
 		readRes, err := client.Read(ctx, readReq)
 		require.NoError(t, err)
 
-		post := readRes.Msg.GetPost()
+		todo := readRes.Msg.GetTodo()
 
-		require.Equal(t, post.GetData(), newData)
+		require.Equal(t, todo.GetTodo(), newTodo)
 	})
 
 	t.Run("delete", func(t *testing.T) {
 		ctx := context.Background()
 
-		createReq := createRequest(&pb.CreateRequest{Data: data})
+		createReq := createRequest(&pb.CreateRequest{Todo: aTodo})
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		createdPost := createRes.Msg.GetPost()
+		createdTodo := createRes.Msg.GetTodo()
 
-		deleteReq := createRequest(&pb.DeleteRequest{PostId: createdPost.GetPostId()})
+		deleteReq := createRequest(&pb.DeleteRequest{TodoId: createdTodo.GetTodoId()})
 		_, err = client.Delete(ctx, deleteReq)
 		require.NoError(t, err)
 
 		// Now try to read the deleted record; it should not exist.
-		readReq := createRequest(&pb.ReadRequest{PostId: createdPost.GetPostId()})
+		readReq := createRequest(&pb.ReadRequest{TodoId: createdTodo.GetTodoId()})
 		_, err = client.Read(ctx, readReq)
-		require.ErrorContains(t, err, "post does not exist")
+		require.ErrorContains(t, err, "todo id does not exist")
 	})
 
 	t.Run("delete not exist", func(t *testing.T) {
-		req := createRequest(&pb.DeleteRequest{PostId: "foo"})
+		req := createRequest(&pb.DeleteRequest{TodoId: "foo"})
 		_, err := client.Delete(context.Background(), req)
 		require.NoError(t, err)
 	})

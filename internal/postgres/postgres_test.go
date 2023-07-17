@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/craigpastro/crudapp/internal/gen/crudapp/v1"
 	"github.com/craigpastro/crudapp/internal/gen/sqlc"
+	pb "github.com/craigpastro/crudapp/internal/gen/todoapp/v1"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
@@ -18,7 +18,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
-const data = "some data"
+const aTodo = "buy veggies"
 
 var q *sqlc.Queries
 
@@ -71,19 +71,19 @@ func TestRead(t *testing.T) {
 
 	created, err := q.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
-		Data:   data,
+		Todo:   aTodo,
 	})
 	require.NoError(t, err)
 
 	read, err := q.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
-		PostID: created.PostID,
+		TodoID: created.TodoID,
 	})
 	require.NoError(t, err)
 
 	require.Equal(t, created.UserID, read.UserID)
-	require.Equal(t, created.PostID, read.PostID)
-	require.Equal(t, created.Data, read.Data)
+	require.Equal(t, created.TodoID, read.TodoID)
+	require.Equal(t, created.Todo, read.Todo)
 }
 
 func TestReadNotExists(t *testing.T) {
@@ -92,7 +92,7 @@ func TestReadNotExists(t *testing.T) {
 
 	_, err := q.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
-		PostID: uuid.NewString(),
+		TodoID: uuid.NewString(),
 	})
 	require.ErrorIs(t, err, pgx.ErrNoRows)
 }
@@ -103,13 +103,13 @@ func TestReadAll(t *testing.T) {
 
 	post1, err := q.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
-		Data:   "data1",
+		Todo:   "data1",
 	})
 	require.NoError(t, err)
 
 	post2, err := q.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
-		Data:   "data2",
+		Todo:   "data2",
 	})
 	require.NoError(t, err)
 
@@ -121,58 +121,69 @@ func TestReadAll(t *testing.T) {
 	require.Len(t, posts, 2)
 
 	opts := []cmp.Option{
-		cmpopts.IgnoreUnexported(pb.Post{}),
-		cmpopts.IgnoreFields(pb.Post{}, "CreatedAt", "UpdatedAt"),
+		cmpopts.IgnoreUnexported(pb.Todo{}),
+		cmpopts.IgnoreFields(pb.Todo{}, "CreatedAt", "UpdatedAt"),
 	}
 
 	require.True(t, cmp.Equal(post1, posts[0], opts...))
 	require.True(t, cmp.Equal(post2, posts[1], opts...))
 }
 
-func TestUpsert(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.NewString()
 
-	post, err := q.Create(ctx, sqlc.CreateParams{
-		UserID: userID,
-		Data:   data,
+	t.Run("updateFailsWhenIDDoesNotExist", func(t *testing.T) {
+		_, err := q.Update(ctx, sqlc.UpdateParams{
+			UserID: userID,
+			TodoID: uuid.NewString(),
+			Todo:   aTodo,
+		})
+		require.ErrorIs(t, err, pgx.ErrNoRows)
 	})
-	require.NoError(t, err)
 
-	time.Sleep(time.Millisecond) // just in case
+	t.Run("updateSucceedsWhenIDExists", func(t *testing.T) {
+		post, err := q.Create(ctx, sqlc.CreateParams{
+			UserID: userID,
+			Todo:   aTodo,
+		})
+		require.NoError(t, err)
 
-	newData := "new data"
-	updatedPost, err := q.Upsert(ctx, sqlc.UpsertParams{
-		UserID: userID,
-		PostID: post.PostID,
-		Data:   newData,
+		time.Sleep(time.Millisecond) // just in case
+
+		newTodo := "get some sleep"
+		updatedTodo, err := q.Update(ctx, sqlc.UpdateParams{
+			UserID: userID,
+			TodoID: post.TodoID,
+			Todo:   newTodo,
+		})
+		require.NoError(t, err)
+
+		require.Equal(t, updatedTodo.Todo, newTodo, "got '%s', want '%s'")
+		require.True(t, post.CreatedAt.Time.Before(updatedTodo.UpdatedAt.Time))
 	})
-	require.NoError(t, err)
-
-	require.Equal(t, updatedPost.Data, newData, "got '%s', want '%s'")
-	require.True(t, post.CreatedAt.Time.Before(updatedPost.UpdatedAt.Time))
 }
 
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.NewString()
 
-	post, err := q.Create(ctx, sqlc.CreateParams{
+	todo, err := q.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
-		Data:   data,
+		Todo:   aTodo,
 	})
 	require.NoError(t, err)
 
 	err = q.Delete(ctx, sqlc.DeleteParams{
 		UserID: userID,
-		PostID: post.PostID,
+		TodoID: todo.TodoID,
 	})
 	require.NoError(t, err)
 
 	// Now try to read the deleted post; it should not exist.
 	_, err = q.Read(ctx, sqlc.ReadParams{
 		UserID: userID,
-		PostID: post.PostID,
+		TodoID: todo.TodoID,
 	})
 	require.ErrorIs(t, err, pgx.ErrNoRows)
 }
@@ -182,7 +193,7 @@ func TestDeleteNotExists(t *testing.T) {
 
 	err := q.Delete(ctx, sqlc.DeleteParams{
 		UserID: "foo",
-		PostID: uuid.NewString(),
+		TodoID: uuid.NewString(),
 	})
 	require.NoError(t, err)
 }
