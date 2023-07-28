@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/bufbuild/connect-go"
-	"github.com/cenkalti/backoff"
+	"github.com/craigpastro/retrier"
 	pb "github.com/craigpastro/todoapp/internal/gen/todoapp/v1"
 	"github.com/craigpastro/todoapp/internal/gen/todoapp/v1/todoappv1connect"
 	"github.com/stretchr/testify/require"
@@ -75,9 +75,9 @@ func TestMain(m *testing.M) {
 	)
 
 	// Until we have a health endpoint
-	cfg := backoff.NewExponentialBackOff()
-	cfg.MaxElapsedTime = 3 * time.Second
-	err = backoff.Retry(func() error {
+	cfg := retrier.NewExponentialBackoff()
+	cfg.Timeout = 3 * time.Second
+	err = retrier.Do(func() error {
 		_, err := client.ReadAll(ctx, createRequest(&pb.ReadAllRequest{}))
 		if err != nil {
 			return err
