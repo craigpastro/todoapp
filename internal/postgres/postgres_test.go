@@ -39,9 +39,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	host, err := container.Host(ctx)
 	if err != nil {
@@ -62,7 +59,11 @@ func TestMain(m *testing.M) {
 
 	q = sqlc.New(pool)
 
-	os.Exit(m.Run())
+	code := m.Run()
+
+	_ = container.Terminate(context.Background())
+
+	os.Exit(code)
 }
 
 func TestRead(t *testing.T) {
