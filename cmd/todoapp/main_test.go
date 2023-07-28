@@ -45,9 +45,6 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	defer func() {
-		_ = container.Terminate(context.Background())
-	}()
 
 	host, err := container.Host(ctx)
 	if err != nil {
@@ -88,7 +85,11 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 
-	os.Exit(m.Run())
+	code := m.Run()
+
+	_ = container.Terminate(context.Background())
+
+	os.Exit(code)
 }
 
 func TestAPI(t *testing.T) {
