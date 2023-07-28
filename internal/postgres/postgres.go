@@ -5,7 +5,7 @@ import (
 	"embed"
 	"fmt"
 
-	"github.com/cenkalti/backoff"
+	"github.com/craigpastro/retrier"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -65,13 +65,13 @@ func New(cfg *Config) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
 	}
 
-	err = backoff.Retry(func() error {
+	err = retrier.Do(func() error {
 		if err = pool.Ping(context.Background()); err != nil {
 			slog.Info("waiting for Postgres")
 			return err
 		}
 		return nil
-	}, backoff.NewExponentialBackOff())
+	}, retrier.NewExponentialBackoff())
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to Postgres: %w", err)
 	}
@@ -96,13 +96,13 @@ func Migrate(connString string) error {
 		return fmt.Errorf("goose error: %w", err)
 	}
 
-	err = backoff.Retry(func() error {
+	err = retrier.Do(func() error {
 		if err = db.Ping(); err != nil {
 			slog.Info("waiting for Postgres")
 			return err
 		}
 		return nil
-	}, backoff.NewExponentialBackOff())
+	}, retrier.NewExponentialBackoff())
 	if err != nil {
 		return fmt.Errorf("goose error: error connecting to Postgres: %w", err)
 	}

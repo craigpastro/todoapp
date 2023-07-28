@@ -18,7 +18,7 @@ lint: generate
 
 .PHONY: test
 test:
-	go test -race ./...
+	TESTCONTAINERS_RYUK_DISABLED=true go test -race ./...
 
 .PHONY: build
 build: generate
