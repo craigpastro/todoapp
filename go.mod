@@ -6,7 +6,7 @@ require (
 	github.com/bufbuild/connect-go v1.9.0
 	github.com/bufbuild/connect-grpcreflect-go v1.1.0
 	github.com/bufbuild/connect-opentelemetry-go v0.3.0
-	github.com/craigpastro/retrier v0.1.1
+	github.com/craigpastro/retrier v0.1.2
 	github.com/envoyproxy/protoc-gen-validate v1.0.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/go-cmp v0.5.9
