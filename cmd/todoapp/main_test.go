@@ -98,7 +98,7 @@ func TestAPI(t *testing.T) {
 		res, err := client.Create(context.Background(), req)
 		require.NoError(t, err)
 
-		todo := res.Msg.GetTodo()
+		todo := res.Msg
 
 		require.NotEmpty(t, todo.GetTodoId())
 		require.NotEmpty(t, todo.GetCreatedAt())
@@ -109,13 +109,13 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(context.Background(), createReq)
 		require.NoError(t, err)
 
-		readReq := createRequest(&pb.ReadRequest{TodoId: createRes.Msg.Todo.GetTodoId()})
+		readReq := createRequest(&pb.ReadRequest{TodoId: createRes.Msg.GetTodoId()})
 		readRes, err := client.Read(context.Background(), readReq)
 		require.NoError(t, err)
 
-		post := readRes.Msg.GetTodo()
+		todo := readRes.Msg.GetTodo()
 
-		require.Equal(t, post.GetTodo(), aTodo)
+		require.Equal(t, todo, aTodo)
 	})
 
 	t.Run("read not exist", func(t *testing.T) {
@@ -131,7 +131,7 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		createdTodo := createRes.Msg.GetTodo()
+		createdTodo := createRes.Msg
 		newTodo := "call parents"
 
 		upsertReq := createRequest(&pb.UpdateRequest{
@@ -149,7 +149,7 @@ func TestAPI(t *testing.T) {
 
 		todo := readRes.Msg.GetTodo()
 
-		require.Equal(t, todo.GetTodo(), newTodo)
+		require.Equal(t, todo, newTodo)
 	})
 
 	t.Run("delete", func(t *testing.T) {
@@ -159,7 +159,7 @@ func TestAPI(t *testing.T) {
 		createRes, err := client.Create(ctx, createReq)
 		require.NoError(t, err)
 
-		createdTodo := createRes.Msg.GetTodo()
+		createdTodo := createRes.Msg
 
 		deleteReq := createRequest(&pb.DeleteRequest{TodoId: createdTodo.GetTodoId()})
 		_, err = client.Delete(ctx, deleteReq)

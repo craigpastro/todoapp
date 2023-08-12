@@ -8,9 +8,7 @@ import (
 	"time"
 
 	"github.com/craigpastro/todoapp/internal/gen/sqlc"
-	pb "github.com/craigpastro/todoapp/internal/gen/todoapp/v1"
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
@@ -121,13 +119,8 @@ func TestReadAll(t *testing.T) {
 
 	require.Len(t, posts, 2)
 
-	opts := []cmp.Option{
-		cmpopts.IgnoreUnexported(pb.Todo{}),
-		cmpopts.IgnoreFields(pb.Todo{}, "CreatedAt", "UpdatedAt"),
-	}
-
-	require.True(t, cmp.Equal(post1, posts[0], opts...))
-	require.True(t, cmp.Equal(post2, posts[1], opts...))
+	require.True(t, cmp.Equal(post1, posts[0]))
+	require.True(t, cmp.Equal(post2, posts[1]))
 }
 
 func TestUpdate(t *testing.T) {
