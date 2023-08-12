@@ -28,7 +28,7 @@ $ curl -XPOST http://localhost:8080/todoapp.v1.TodoAppService/Create \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{"todo": "buy some carrots"}'
-{"todo":{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}}
+{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}
 ```
 
 Read a post:
@@ -38,7 +38,7 @@ $ curl -XPOST http://localhost:8080/todoapp.v1.TodoAppService/Read \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{"todoId": "6086008b-4706-4245-8f4e-58ed3eba43d7"}'
-{"todo":{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}}
+{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}
 ```
 
 Read all posts:
@@ -58,7 +58,7 @@ $ curl -XPOST http://localhost:8080/todoapp.v1.TodoAppService/Update \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{"todoId": "6086008b-4706-4245-8f4e-58ed3eba43d7", "todo": "buy onions"}'
-{"todo":{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"buy onions","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:22:18.689477Z"}}
+{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","data":"buy onions","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:22:18.689477Z"}
 ```
 
 Delete a post:
