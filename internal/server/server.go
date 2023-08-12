@@ -41,7 +41,7 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 
 	userID := ctxpkg.GetUserIDFromCtx(ctx)
 
-	post, err := s.queries.Create(ctx, sqlc.CreateParams{
+	row, err := s.queries.Create(ctx, sqlc.CreateParams{
 		UserID: userID,
 		Todo:   req.Msg.GetTodo(),
 	})
@@ -51,13 +51,11 @@ func (s *server) Create(ctx context.Context, req *connect.Request[pb.CreateReque
 	}
 
 	return connect.NewResponse(&pb.CreateResponse{
-		Todo: &pb.Todo{
-			UserId:    post.UserID,
-			TodoId:    post.TodoID,
-			Todo:      post.Todo,
-			CreatedAt: timestamppb.New(post.CreatedAt.Time),
-			UpdatedAt: timestamppb.New(post.UpdatedAt.Time),
-		},
+		UserId:    row.UserID,
+		TodoId:    row.TodoID,
+		Todo:      row.Todo,
+		CreatedAt: timestamppb.New(row.CreatedAt.Time),
+		UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 	}), nil
 }
 
@@ -82,13 +80,11 @@ func (s *server) Read(ctx context.Context, req *connect.Request[pb.ReadRequest])
 	}
 
 	return connect.NewResponse(&pb.ReadResponse{
-		Todo: &pb.Todo{
-			UserId:    row.UserID,
-			TodoId:    row.TodoID,
-			Todo:      row.Todo,
-			CreatedAt: timestamppb.New(row.CreatedAt.Time),
-			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
-		},
+		UserId:    row.UserID,
+		TodoId:    row.TodoID,
+		Todo:      row.Todo,
+		CreatedAt: timestamppb.New(row.CreatedAt.Time),
+		UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 	}), nil
 }
 
@@ -107,11 +103,11 @@ func (s *server) ReadAll(ctx context.Context, req *connect.Request[pb.ReadAllReq
 	}
 
 	var lastIndex int64
-	todos := make([]*pb.Todo, 0, len(rows))
+	todos := make([]*pb.ReadResponse, 0, len(rows))
 	for _, row := range rows {
 		lastIndex = row.ID
 
-		todos = append(todos, &pb.Todo{
+		todos = append(todos, &pb.ReadResponse{
 			UserId:    row.UserID,
 			TodoId:    row.TodoID,
 			Todo:      row.Todo,
@@ -149,13 +145,11 @@ func (s *server) Update(ctx context.Context, req *connect.Request[pb.UpdateReque
 	}
 
 	return connect.NewResponse(&pb.UpdateResponse{
-		Todo: &pb.Todo{
-			UserId:    row.UserID,
-			TodoId:    row.TodoID,
-			Todo:      row.Todo,
-			CreatedAt: timestamppb.New(row.CreatedAt.Time),
-			UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
-		},
+		UserId:    row.UserID,
+		TodoId:    row.TodoID,
+		Todo:      row.Todo,
+		CreatedAt: timestamppb.New(row.CreatedAt.Time),
+		UpdatedAt: timestamppb.New(row.UpdatedAt.Time),
 	}), nil
 }
 

@@ -7,6 +7,7 @@ services:
     ports:
       - 8080:8080
     environment:
+      - JWT_SECRET=PMBrjiOH5RMo6nQHidA62XctWGxDG0rw
       - POSTGRES_CONN_STRING=postgres://authenticator:password@postgres:5432/postgres
       - POSTGRES_AUTOMIGRATE=true
       - POSTGRES_MIGRATE_CONN_STRING=postgres://postgres:password@postgres:5432/postgres

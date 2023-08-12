@@ -21,7 +21,11 @@ message CreateRequest {
 }
 
 message CreateResponse {
-  Todo todo = 1;
+  string user_id = 1;
+  string todo_id = 2;
+  string todo = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message ReadRequest {
@@ -32,13 +36,17 @@ message ReadRequest {
 }
 
 message ReadResponse {
-  Todo todo = 1;
+  string user_id = 1;
+  string todo_id = 2;
+  string todo = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message ReadAllRequest {}
 
 message ReadAllResponse {
-  repeated Todo todos = 1;
+  repeated ReadResponse todos = 1;
   int64 last_index = 2;
 }
 
@@ -55,7 +63,11 @@ message UpdateRequest {
 }
 
 message UpdateResponse {
-  Todo todo = 1;
+  string user_id = 1;
+  string todo_id = 2;
+  string todo = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
 }
 
 message DeleteRequest {
@@ -66,11 +78,3 @@ message DeleteRequest {
 }
 
 message DeleteResponse {}
-
-message Todo {
-  string user_id = 1;
-  string todo_id = 2;
-  string todo = 3;
-  google.protobuf.Timestamp created_at = 4;
-  google.protobuf.Timestamp updated_at = 5;
-}
