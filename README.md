@@ -48,7 +48,7 @@ $ curl -XPOST http://localhost:8080/todoapp.v1.TodoAppService/ReadAll \
 -H "Authentication: Bearer $TOKEN" \
 -H 'Content-Type: application/json' \
 -d '{}'
-{"todo":[{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}],"lastIndex":"1"}
+{"todos":[{"userId":"mr_roboto","todoId":"6086008b-4706-4245-8f4e-58ed3eba43d7","todo":"buy some carrots","createdAt":"2023-06-15T18:20:56.235695Z","updatedAt":"2023-06-15T18:20:56.235695Z"}],"lastIndex":"1"}
 ```
 
 Update a post:
