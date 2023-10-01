@@ -23,7 +23,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.17.0
 	golang.org/x/exp v0.0.0-20230811145659-89c5cff77bcb
 	golang.org/x/net v0.14.0
-	google.golang.org/grpc v1.57.0
+	google.golang.org/grpc v1.58.2
 	google.golang.org/protobuf v1.31.0
 )
 
