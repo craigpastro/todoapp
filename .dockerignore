@@ -1,0 +1,9 @@
+**/.dockerignore
+**/.github
+**/.gitignore
+**/.vscode
+**/compose*
+**/Dockerfile*
+LICENSE
+README.md
+todoapp
