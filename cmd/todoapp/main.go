@@ -19,7 +19,6 @@ import (
 	"github.com/craigpastro/todoapp/internal/postgres"
 	"github.com/craigpastro/todoapp/internal/server"
 	"github.com/sethvargo/go-envconfig"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	"golang.org/x/exp/slog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
@@ -61,18 +60,16 @@ func run(ctx context.Context, cfg *config) {
 	logger := slog.New(handler)
 	slog.SetDefault(logger)
 
-	tp := sdktrace.NewTracerProvider()
-	if cfg.TraceEnabled {
-		tp = instrumentation.MustNewTracerProvider(instrumentation.TracerConfig{
+	tpShutdown := instrumentation.MustNewTracerProvider(
+		cfg.TraceEnabled,
+		instrumentation.TracerConfig{
 			ServiceName:    cfg.ServiceName,
 			ServiceVersion: cfg.ServiceVersion,
 			Environment:    cfg.ServiceEnvironment,
 			Endpoint:       cfg.TraceProviderURL,
 			SampleRatio:    cfg.TraceSampleRatio,
-		})
-
-		slog.Info(fmt.Sprintf("sending traces to '%s'", cfg.TraceProviderURL))
-	}
+		},
+	)
 
 	pool := postgres.MustNew(&postgres.Config{
 		ConnString:        cfg.PostgresConnString,
@@ -118,7 +115,7 @@ func run(ctx context.Context, cfg *config) {
 
 	slog.Info("todoapp attempting to shutdown gracefully")
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
@@ -126,8 +123,7 @@ func run(ctx context.Context, cfg *config) {
 		os.Exit(1)
 	}
 
-	_ = tp.ForceFlush(ctx)
-	_ = tp.Shutdown(ctx)
+	_ = tpShutdown(ctx)
 	pool.Close()
 
 	slog.Info("todoapp shutdown gracefully. bye 👋")
