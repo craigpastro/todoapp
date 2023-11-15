@@ -62,6 +62,9 @@ func MustNewTracerProvider(enabled bool, cfg TracerConfig) shutdownFunc {
 		otlptracegrpc.WithInsecure(),
 		otlptracegrpc.WithDialOption(grpc.WithBlock()),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.SampleRatio)),
