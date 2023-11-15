@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,7 +20,6 @@ import (
 	"github.com/craigpastro/todoapp/internal/postgres"
 	"github.com/craigpastro/todoapp/internal/server"
 	"github.com/sethvargo/go-envconfig"
-	"golang.org/x/exp/slog"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 )
@@ -105,7 +105,6 @@ func run(ctx context.Context, cfg *config) {
 
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("failed to start todoapp", err)
-			os.Exit(1)
 		}
 	}()
 
@@ -119,8 +118,7 @@ func run(ctx context.Context, cfg *config) {
 	defer cancel()
 
 	if err := srv.Shutdown(ctx); err != nil {
-		slog.Error("todoapp shutdown failed", slog.String("error", err.Error()))
-		os.Exit(1)
+		log.Fatal("todoapp shutdown failed", err)
 	}
 
 	_ = tpShutdown(ctx)
