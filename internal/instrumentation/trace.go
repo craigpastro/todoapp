@@ -2,18 +2,22 @@ package instrumentation
 
 import (
 	"context"
+	"fmt"
+	"log/slog"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
+	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.20.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 )
+
+type shutdownFunc func(context.Context) error
 
 type TracerConfig struct {
 	ServiceName    string
@@ -23,37 +27,56 @@ type TracerConfig struct {
 	SampleRatio    float64
 }
 
-func MustNewTracerProvider(cfg TracerConfig) *sdktrace.TracerProvider {
-	client := otlptracegrpc.NewClient(
-		otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint(cfg.Endpoint),
-		otlptracegrpc.WithDialOption(grpc.WithBlock()),
+func MustNewTracerProvider(enabled bool, cfg TracerConfig) shutdownFunc {
+	if !enabled {
+		return func(_ context.Context) error {
+			return nil
+		}
+	}
+
+	prop := propagation.NewCompositeTextMapPropagator(
+		propagation.TraceContext{},
+		propagation.Baggage{},
 	)
+	otel.SetTextMapPropagator(prop)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	exp, err := otlptrace.New(ctx, client)
+	resource, err := resource.Merge(
+		resource.Default(),
+		resource.NewWithAttributes(
+			semconv.SchemaURL,
+			semconv.ServiceNameKey.String(cfg.ServiceName),
+			semconv.ServiceVersionKey.String(cfg.ServiceVersion),
+			semconv.DeploymentEnvironmentKey.String(cfg.Environment),
+		),
+	)
 	if err != nil {
 		panic(err)
 	}
 
-	resource := resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceNameKey.String(cfg.ServiceName),
-		semconv.ServiceVersionKey.String(cfg.ServiceVersion),
-		semconv.DeploymentEnvironmentKey.String(cfg.Environment),
-	)
+	timeoutCtx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	tp := sdktrace.NewTracerProvider(
+	traceExporter, err := otlptracegrpc.New(
+		timeoutCtx,
+		otlptracegrpc.WithEndpoint(cfg.Endpoint),
+		otlptracegrpc.WithInsecure(),
+		otlptracegrpc.WithDialOption(grpc.WithBlock()),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	tracerProvider := sdktrace.NewTracerProvider(
 		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.SampleRatio)),
+		sdktrace.WithBatcher(traceExporter),
 		sdktrace.WithResource(resource),
-		sdktrace.WithSpanProcessor(sdktrace.NewBatchSpanProcessor(exp)),
 	)
 
-	otel.SetTracerProvider(tp)
+	otel.SetTracerProvider(tracerProvider)
 
-	return tp
+	slog.Info(fmt.Sprintf("sending traces to '%s'", cfg.Endpoint))
+
+	return tracerProvider.Shutdown
 }
 
 func TraceError(span trace.Span, err error) {
