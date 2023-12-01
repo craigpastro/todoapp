@@ -11,8 +11,8 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.4.0
-	github.com/jackc/pgx/v5 v5.4.3
-	github.com/pressly/goose/v3 v3.15.1
+	github.com/jackc/pgx/v5 v5.5.0
+	github.com/pressly/goose/v3 v3.16.0
 	github.com/sethvargo/go-envconfig v0.9.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
@@ -63,6 +63,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
+	github.com/sethvargo/go-retry v0.2.4 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.10 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
@@ -72,12 +73,13 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.21.0 // indirect
 	go.opentelemetry.io/otel/metric v1.21.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
+	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.16.0 // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
+	golang.org/x/mod v0.14.0 // indirect
+	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.15.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231127180814-3a041ad873d4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
