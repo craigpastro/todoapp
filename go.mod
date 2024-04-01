@@ -14,7 +14,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/pressly/goose/v3 v3.17.0
 	github.com/sethvargo/go-envconfig v1.0.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/otel v1.24.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.24.0
