@@ -1,6 +1,7 @@
 module github.com/craigpastro/todoapp
 
 go 1.21
+toolchain go1.22.1
 
 require (
 	github.com/bufbuild/connect-go v1.10.0
@@ -13,7 +14,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.5.4
 	github.com/pressly/goose/v3 v3.17.0
-	github.com/sethvargo/go-envconfig v1.0.0
+	github.com/sethvargo/go-envconfig v1.0.1
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.27.0
 	go.opentelemetry.io/otel v1.24.0
